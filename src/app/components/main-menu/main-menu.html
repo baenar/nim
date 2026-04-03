@@ -1,0 +1,46 @@
+<div class="menu-container">
+  <div class="hero">
+    <div class="logo">
+      <span class="logo-text">NIM</span>
+    </div>
+  </div>
+
+  <div class="variants-section">
+    <h2 class="section-title">
+      <span class="section-icon">//</span> Select Variant
+    </h2>
+
+    <div class="variant-grid">
+      @for (variant of variants; track variant.key) {
+        <div class="variant-card" [class.disabled]="!variant.implemented">
+          @if (variant.implemented) {
+            <a [routerLink]="['/settings', variant.key]" class="variant-link">
+              <div class="variant-header">
+                <h3 class="variant-name">{{ variant.name }}</h3>
+                <span class="variant-badge badge--active">playable</span>
+              </div>
+              <p class="variant-desc">{{ variant.description }}</p>
+              <span class="variant-arrow">→</span>
+            </a>
+          } @else {
+            <div class="variant-link">
+              <div class="variant-header">
+                <h3 class="variant-name">{{ variant.name }}</h3>
+                <span class="variant-badge badge--soon">coming soon</span>
+              </div>
+              <p class="variant-desc">{{ variant.description }}</p>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  </div>
+
+  <div class="footer-links">
+    <a href="https://en.wikipedia.org/wiki/Nim" target="_blank" rel="noopener noreferrer" class="theory-link">
+      <span class="link-icon">📖</span>
+      Learn the Theory
+      <span class="external-icon">↗</span>
+    </a>
+  </div>
+</div>

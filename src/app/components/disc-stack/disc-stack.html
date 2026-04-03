@@ -1,0 +1,16 @@
+<div class="stack-container" [class.selected]="selected()" [class.empty]="isEmpty()">
+  <div class="stack-label">Stack {{ stackIndex() + 1 }}</div>
+  <div class="stack-count">{{ height() }}</div>
+  <div class="pole-area">
+    <div class="pole"></div>
+    <div class="discs-wrapper">
+      @for (disc of discs(); track disc) {
+        <div class="disc" [style.animation-delay]="disc * 30 + 'ms'">
+          <div class="disc-top"></div>
+          <div class="disc-body"></div>
+        </div>
+      }
+    </div>
+    <div class="base"></div>
+  </div>
+</div>

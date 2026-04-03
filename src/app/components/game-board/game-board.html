@@ -1,0 +1,85 @@
+<div class="board-container">
+  <div class="board-header">
+    <button class="back-btn" (click)="onNewGame()">← Menu</button>
+
+    <div class="game-info">
+      <span class="info-tag">{{ variantLabel }}</span>
+      <span class="info-tag">
+        {{ game.config().endCondition === 'last-loses' ? 'Last takes loses' : 'Last takes wins' }}
+      </span>
+    </div>
+  </div>
+
+  @if (!game.state().isGameOver) {
+    <div class="turn-indicator" [class.computer-turn]="game.isComputerTurn()">
+      <div class="turn-dot"></div>
+      <span class="turn-text">
+        @if (game.isComputerTurn()) {
+          Computer is thinking...
+        } @else {
+          {{ currentPlayerLabel }}'s turn
+        }
+      </span>
+    </div>
+  }
+
+  <div class="stacks-area">
+    @for (stack of game.state().stacks; track $index) {
+      <app-disc-stack
+        [height]="stack"
+        [stackIndex]="$index"
+        [selected]="game.selectedStack() === $index"
+        (click)="game.selectStack($index)"
+      />
+    }
+  </div>
+
+  @if (game.selectedStack() !== null && !game.isComputerTurn() && !game.state().isGameOver) {
+    <div class="action-panel">
+      <div class="amount-selector">
+        <label class="amount-label">Remove from Stack {{ game.selectedStack()! + 1 }}:</label>
+        <div class="amount-buttons">
+          @for (n of amountOptions; track n) {
+            <button
+              class="amount-btn"
+              [class.active]="game.selectedAmount() === n"
+              (click)="game.setAmount(n)"
+            >
+              {{ n }}
+            </button>
+          }
+        </div>
+      </div>
+      <button class="btn btn--primary" (click)="onConfirmMove()">
+        Confirm Move
+      </button>
+    </div>
+  }
+
+  @if (game.state().isGameOver) {
+    <div class="game-over-overlay">
+      <div class="game-over-card">
+        <div class="game-over-icon">🏆</div>
+        <h2 class="game-over-title">{{ winnerLabel }} wins!</h2>
+        <div class="game-over-actions">
+          <button class="btn btn--primary" (click)="onRematch()">Rematch</button>
+          <button class="btn btn--secondary" (click)="onNewGame()">Main Menu</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  @if (game.state().moveHistory.length > 0) {
+    <div class="move-log">
+      <h4 class="log-title">// Move History</h4>
+      <div class="log-entries">
+        @for (move of game.state().moveHistory; track $index) {
+          <div class="log-entry">
+            <span class="log-player">{{ getPlayerLabel(move.player) }}</span>
+            <span class="log-action">took {{ move.amount }} from Stack {{ move.stackIndex + 1 }}</span>
+          </div>
+        }
+      </div>
+    </div>
+  }
+</div>

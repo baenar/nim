@@ -1,0 +1,146 @@
+<div class="settings-container">
+  <button class="back-btn" (click)="goBack()">
+    ← Back to Menu
+  </button>
+
+  <div class="settings-header">
+    <h1 class="settings-title">Classic Nim</h1>
+    <p class="settings-subtitle">Configure your game</p>
+  </div>
+
+  <div class="settings-form">
+    <div class="form-section">
+      <h3 class="form-section-title">
+        <span class="section-icon">//</span> Opponent
+      </h3>
+
+      <div class="toggle-group">
+        <button
+          class="toggle-btn"
+          [class.active]="opponent === 'computer'"
+          (click)="opponent = 'computer'"
+        >
+          vs Computer
+        </button>
+        <button
+          class="toggle-btn"
+          [class.active]="opponent === 'human'"
+          (click)="opponent = 'human'"
+        >
+          vs Player
+        </button>
+      </div>
+
+      @if (opponent === 'computer') {
+        <div class="sub-option">
+          <label class="form-label">Difficulty</label>
+          <div class="toggle-group toggle-group--sm">
+            <button
+              class="toggle-btn"
+              [class.active]="difficulty === 'random'"
+              (click)="difficulty = 'random'"
+            >
+              Random
+            </button>
+            <button
+              class="toggle-btn"
+              [class.active]="difficulty === 'expert'"
+              (click)="difficulty = 'expert'"
+            >
+              Expert
+            </button>
+          </div>
+        </div>
+      }
+    </div>
+
+    <div class="form-section">
+      <h3 class="form-section-title">
+        <span class="section-icon">//</span> Rules
+      </h3>
+
+      <div class="form-row">
+        <div class="form-field">
+          <label class="form-label">End condition</label>
+          <select [(ngModel)]="endCondition">
+            <option value="last-loses">Take last → Lose</option>
+            <option value="last-wins">Take last → Win</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="sub-option">
+        <div class="toggle-group">
+          <button
+            class="toggle-btn"
+            [class.active]="!subtraction"
+            (click)="subtraction = false"
+          >
+            Standard
+          </button>
+          <button
+            class="toggle-btn"
+            [class.active]="subtraction"
+            (click)="subtraction = true"
+          >
+            Subtraction Game Variant
+          </button>
+        </div>
+
+        @if (subtraction) {
+          <div class="sub-option">
+            <div class="form-field">
+              <label class="form-label">Max objects per turn</label>
+              <input
+                type="number"
+                [(ngModel)]="maxTake"
+                min="1"
+                max="20"
+              />
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+
+    <div class="form-section">
+      <h3 class="form-section-title">
+        <span class="section-icon">//</span> Stacks
+      </h3>
+
+      <div class="form-row">
+        <div class="form-field">
+          <label class="form-label">Number of stacks</label>
+          <input
+            type="number"
+            [(ngModel)]="stackCount"
+            (ngModelChange)="onStackCountChange()"
+            min="1"
+            max="8"
+          />
+        </div>
+      </div>
+
+      <div class="stack-sizes">
+        @for (size of stackSizes; track trackByIndex($index)) {
+          <div class="stack-size-field">
+            <label class="form-label">Stack {{ $index + 1 }} size</label>
+            <input
+              type="number"
+              [ngModel]="stackSizes[$index]"
+              (ngModelChange)="updateStackSize($index, $event)"
+              min="1"
+              max="30"
+            />
+          </div>
+        }
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button class="btn btn--primary btn--lg" (click)="startGame()">
+        Start Game →
+      </button>
+    </div>
+  </div>
+</div>
