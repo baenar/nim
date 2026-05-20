@@ -35,8 +35,7 @@ export class GameBoard implements OnInit {
   }
 
   get amountOptions(): number[] {
-    const max = this.game.maxRemovable();
-    return Array.from({ length: max }, (_, i) => i + 1);
+    return this.game.validAmounts();
   }
 
   getPlayerLabel(player: 1 | 2): string {
@@ -49,6 +48,10 @@ export class GameBoard implements OnInit {
     return config.variant === 'classic' && (config as ClassicNimConfig).cheatMode;
   }
 
+  get isDraftSubtraction(): boolean {
+    return this.game.config().variant === 'draft-subtraction';
+  }
+
   get variantLabel(): string {
     const config = this.game.config();
     switch (config.variant) {
@@ -58,9 +61,21 @@ export class GameBoard implements OnInit {
           ? `Classic Nim · Subtraction (max ${c.maxTake})`
           : 'Classic Nim';
       }
+      case 'draft-subtraction':
+        return 'Draft Subtraction';
       default:
-        return config.variant.charAt(0).toUpperCase() + config.variant.slice(1) + ' Nim';
+        return 'Unknown';
     }
+  }
+
+  get draftCurrentPlayerLabel(): string {
+    const draft = this.game.draftState();
+    if (!draft) return '';
+    return this.getPlayerLabel(draft.currentDrafter);
+  }
+
+  onDraftPick(value: number): void {
+    this.game.draftPick(value);
   }
 
   get currentPlayerLabel(): string {

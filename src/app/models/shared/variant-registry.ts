@@ -1,14 +1,14 @@
 import { GameVariant, VariantInfo } from './game-state.models';
 
 export const VARIANT_INFO: Record<GameVariant, VariantInfo> = {
-  classic: {
+  "classic": {
     name: 'Classic Nim',
     description: 'Remove objects from a single stack per turn. Optional subtraction rule limits the max you can take.',
     implemented: true,
   },
-  greedy: {
-    name: 'Greedy Nim',
-    description: 'Take from the largest pile, but you can only take up to half.',
-    implemented: false,
+  "draft-subtraction": {
+    name: 'Draft Subtraction',
+    description: 'Draft a shared subtraction set, then play a subtraction game on a single heap.',
+    implemented: true,
   },
 };

@@ -1,7 +1,7 @@
 export type OpponentType = 'human' | 'computer';
 export type ComputerDifficulty = 'random' | 'expert';
 export type EndCondition = 'last-wins' | 'last-loses';
-export type GameVariant = 'classic' | 'greedy';
+export type GameVariant = 'classic' | 'draft-subtraction';
 
 export interface GameState {
   stacks: number[];

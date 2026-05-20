@@ -1,4 +1,4 @@
 import { ClassicNimConfig } from './classic/classic-nim.models';
-import { GreedyNimConfig } from './greedy/greedy-nim.models';
+import { DraftSubtractionConfig } from './draft-subtraction/draft-subtraction.models';
 
-export type GameConfig = ClassicNimConfig | GreedyNimConfig;
+export type GameConfig = ClassicNimConfig | DraftSubtractionConfig;

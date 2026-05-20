@@ -254,6 +254,121 @@
   color: var(--text-secondary);
 }
 
+// --- Draft phase ---
+
+.draft-section {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  margin-bottom: 32px;
+  animation: slideUp 200ms ease-out;
+}
+
+.draft-set,
+.draft-pool {
+  padding: 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+}
+
+.draft-set-title,
+.draft-pool-title {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 12px;
+}
+
+.draft-set-values {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 40px;
+  align-items: center;
+}
+
+.draft-empty {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.draft-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  height: 40px;
+  padding: 0 14px;
+  border-radius: var(--radius);
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  font-weight: 600;
+  transition: all var(--transition);
+
+  &--picked {
+    background: var(--accent);
+    color: var(--bg-primary);
+    border: 1px solid var(--accent);
+  }
+
+  &--available {
+    background: var(--bg-input);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    cursor: pointer;
+
+    &:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 194, 255, 0.15);
+    }
+  }
+}
+
+.draft-pool-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+// --- Subtraction set bar (play phase) ---
+
+.subtraction-set-bar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  margin-bottom: 24px;
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  flex-wrap: wrap;
+}
+
+.set-bar-label {
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-right: 4px;
+}
+
+.set-bar-value {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.set-bar-comma {
+  color: var(--text-muted);
+  margin-right: 2px;
+}
+
 @keyframes pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.4; }

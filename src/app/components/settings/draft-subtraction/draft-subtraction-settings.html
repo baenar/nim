@@ -1,0 +1,85 @@
+<div class="settings-container">
+  <button class="back-btn" (click)="goBack()">
+    &larr; Back to Menu
+  </button>
+
+  <div class="settings-header">
+    <h1 class="settings-title">Draft Subtraction</h1>
+    <p class="settings-subtitle">Configure the draft &amp; subtraction game</p>
+  </div>
+
+  <div class="settings-form">
+    <div class="form-section">
+      <h3 class="form-section-title">
+        <span class="section-icon">//</span> Variant
+      </h3>
+
+      <div class="toggle-group">
+        <button
+          class="toggle-btn"
+          [class.active]="draftType === 'impartial'"
+          (click)="draftType = 'impartial'"
+        >
+          Impartial
+        </button>
+        <button
+          class="toggle-btn disabled-btn"
+          [class.active]="draftType === 'partisan'"
+          disabled
+        >
+          Partisan (coming soon)
+        </button>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <h3 class="form-section-title">
+        <span class="section-icon">//</span> Parameters
+      </h3>
+
+      <div class="form-row">
+        <div class="form-field">
+          <label class="form-label">N &mdash; Heap size</label>
+          <input
+            type="number"
+            [(ngModel)]="n"
+            (ngModelChange)="onNChange()"
+            min="2"
+            max="200"
+          />
+        </div>
+
+        <div class="form-field">
+          <label class="form-label">k &mdash; Subtraction set size</label>
+          <input
+            type="number"
+            [(ngModel)]="k"
+            (ngModelChange)="onKChange()"
+            min="1"
+            [max]="poolSize"
+          />
+        </div>
+      </div>
+
+      <div class="form-row" style="margin-top: 16px">
+        <div class="form-field">
+          <label class="form-label">p &mdash; Pool max value</label>
+          <input
+            type="number"
+            [(ngModel)]="poolSize"
+            (ngModelChange)="onPoolSizeChange()"
+            min="1"
+            [max]="maxPoolSize"
+          />
+          <span class="form-hint">Pool = [1, 2, ..., {{ poolSize }}]</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button class="btn btn--primary btn--lg" (click)="startGame()">
+        Start Game &rarr;
+      </button>
+    </div>
+  </div>
+</div>
