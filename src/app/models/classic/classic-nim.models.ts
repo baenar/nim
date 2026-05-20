@@ -4,6 +4,7 @@ export interface ClassicNimConfig extends GameConfigBase {
   variant: 'classic';
   subtraction: boolean;
   maxTake: number;
+  cheatMode: boolean;
 }
 
 export const CLASSIC_NIM_DEFAULTS: ClassicNimConfig = {
@@ -15,4 +16,5 @@ export const CLASSIC_NIM_DEFAULTS: ClassicNimConfig = {
   endCondition: 'last-loses',
   subtraction: false,
   maxTake: 3,
+  cheatMode: false,
 };

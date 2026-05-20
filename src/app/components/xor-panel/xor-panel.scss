@@ -1,0 +1,94 @@
+.xor-panel {
+  padding: 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+}
+
+.xor-title {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 16px;
+}
+
+.xor-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-mono);
+
+  tfoot {
+    border-top: 2px solid var(--accent);
+  }
+}
+
+.xor-label {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  text-align: right;
+  padding: 4px 0;
+  min-width: 32px;
+}
+
+.xor-colon {
+  padding: 4px 10px;
+  color: var(--text-muted);
+  font-size: 1.1rem;
+}
+
+.xor-bit {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-align: center;
+  padding: 4px 8px;
+  min-width: 28px;
+}
+
+.xor-sum-row {
+  .xor-label {
+    padding-top: 10px;
+  }
+
+  .xor-colon {
+    padding-top: 10px;
+  }
+
+  .xor-bit {
+    padding-top: 10px;
+  }
+}
+
+.xor-bit-hot {
+  color: var(--accent);
+}
+
+.xor-zero {
+  color: var(--success, #22c55e);
+}
+
+.xor-nonzero {
+  color: var(--accent);
+}
+
+.xor-verdict {
+  margin-top: 14px;
+  font-size: 0.8rem;
+  font-family: var(--font-mono);
+  text-align: center;
+  padding: 8px 12px;
+  border-radius: var(--radius);
+
+  &.losing {
+    color: var(--success, #22c55e);
+    background: rgba(34, 197, 94, 0.08);
+  }
+
+  &.winning {
+    color: var(--accent);
+    background: rgba(0, 194, 255, 0.08);
+  }
+}

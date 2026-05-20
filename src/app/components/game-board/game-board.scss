@@ -1,8 +1,30 @@
+.board-wrapper {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  padding: 0 24px;
+
+  &.has-cheat-panel {
+    .board-container {
+      margin: 0;
+    }
+  }
+}
+
+.cheat-sidebar {
+  flex-shrink: 0;
+  width: 280px;
+  padding: 32px 0 32px 24px;
+  align-self: flex-start;
+  position: sticky;
+  top: 0;
+}
+
 .board-container {
   max-width: 900px;
-  margin: 0 auto;
-  padding: 32px 24px;
-  min-height: 100vh;
+  flex: 1;
+  min-width: 0;
+  padding: 32px 0;
   display: flex;
   flex-direction: column;
 }

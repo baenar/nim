@@ -4,10 +4,11 @@ import { GameService } from '../../services/game.service';
 import { GameConfig } from '../../models/game-config.types';
 import { ClassicNimConfig } from '../../models/classic/classic-nim.models';
 import { DiscStack } from '../disc-stack/disc-stack';
+import { XorPanel } from '../xor-panel/xor-panel';
 
 @Component({
   selector: 'app-game-board',
-  imports: [DiscStack],
+  imports: [DiscStack, XorPanel],
   templateUrl: './game-board.html',
   styleUrl: './game-board.scss',
 })
@@ -41,6 +42,11 @@ export class GameBoard implements OnInit {
   getPlayerLabel(player: 1 | 2): string {
     if (player === 1) return 'Player 1';
     return this.game.config().opponent === 'computer' ? 'Computer' : 'Player 2';
+  }
+
+  get cheatMode(): boolean {
+    const config = this.game.config();
+    return config.variant === 'classic' && (config as ClassicNimConfig).cheatMode;
   }
 
   get variantLabel(): string {

@@ -17,6 +17,7 @@ export class ClassicNimSettings {
   endCondition = CLASSIC_NIM_DEFAULTS.endCondition;
   subtraction = CLASSIC_NIM_DEFAULTS.subtraction;
   maxTake = CLASSIC_NIM_DEFAULTS.maxTake;
+  cheatMode = CLASSIC_NIM_DEFAULTS.cheatMode;
 
   constructor(private router: Router) {}
 
@@ -49,6 +50,7 @@ export class ClassicNimSettings {
       endCondition: this.endCondition,
       subtraction: this.subtraction,
       maxTake: this.maxTake,
+      cheatMode: this.cheatMode,
     };
     this.router.navigate(['/play'], { state: { config } });
   }

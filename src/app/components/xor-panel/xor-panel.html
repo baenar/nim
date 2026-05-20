@@ -1,0 +1,36 @@
+<div class="xor-panel">
+  <h4 class="xor-title">// XOR Analysis</h4>
+
+  <table class="xor-table">
+    <tbody>
+      @for (row of rows(); track $index) {
+        <tr>
+          <td class="xor-label">{{ row.label }}</td>
+          <td class="xor-colon">:</td>
+          @for (bit of row.bits; track $index) {
+            <td class="xor-bit">{{ bit }}</td>
+          }
+        </tr>
+      }
+    </tbody>
+    <tfoot>
+      <tr class="xor-sum-row">
+        <td class="xor-label" [class.xor-zero]="nimSum() === 0" [class.xor-nonzero]="nimSum() !== 0">
+          {{ nimSum() }}
+        </td>
+        <td class="xor-colon">:</td>
+        @for (bit of nimSumBits(); track $index) {
+          <td class="xor-bit" [class.xor-bit-hot]="bit === 1">{{ bit }}</td>
+        }
+      </tr>
+    </tfoot>
+  </table>
+
+  <div class="xor-verdict" [class.losing]="!isWinning()" [class.winning]="isWinning()">
+    @if (isWinning()) {
+      Winning position
+    } @else {
+      Losing position
+    }
+  </div>
+</div>
