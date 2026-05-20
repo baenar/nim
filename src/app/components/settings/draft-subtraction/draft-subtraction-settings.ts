@@ -28,29 +28,35 @@ export class DraftSubtractionSettings {
   onNChange(): void {
     if (this.n < 2) this.n = 2;
     if (this.n > 200) this.n = 200;
-    // Auto-adjust pool size to default if it exceeds new max
-    const max = this.maxPoolSize;
-    if (this.poolSize > max) {
-      this.poolSize = max;
-    }
   }
 
   onKChange(): void {
     if (this.k < 1) this.k = 1;
-    if (this.k > this.poolSize) this.k = this.poolSize;
   }
 
   onPoolSizeChange(): void {
     if (this.poolSize < 1) this.poolSize = 1;
-    const max = this.maxPoolSize;
-    if (this.poolSize > max) this.poolSize = max;
-    // Adjust k if it now exceeds pool size
-    if (this.k > this.poolSize) {
-      this.k = this.poolSize;
-    }
+  }
+
+  get isValid(): boolean {
+    return this.n >= 2
+      && this.poolSize > 0
+      && this.poolSize < 0.4 * this.n
+      && this.k > 0
+      && this.k < this.poolSize;
+  }
+
+  get validationErrors(): string[] {
+    const errors: string[] = [];
+    if (this.poolSize <= 0) errors.push('p must be greater than 0');
+    if (this.k <= 0) errors.push('k must be greater than 0');
+    if (this.poolSize >= 0.4 * this.n) errors.push('p must be less than 0.4 × N (' + (0.4 * this.n) + ')');
+    if (this.k >= this.poolSize) errors.push('k must be less than p (' + this.poolSize + ')');
+    return errors;
   }
 
   startGame(): void {
+    if (!this.isValid) return;
     const config: DraftSubtractionConfig = {
       variant: 'draft-subtraction',
       stackCount: 1,

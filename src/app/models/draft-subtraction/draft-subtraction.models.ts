@@ -26,11 +26,11 @@ export interface DraftState {
 export const DRAFT_SUBTRACTION_DEFAULTS: DraftSubtractionConfig = {
   variant: 'draft-subtraction',
   stackCount: 1,
-  stackSizes: [37],
+  stackSizes: [40],
   opponent: 'human',
   difficulty: 'random',
   endCondition: 'last-wins',
-  n: 37,
+  n: 40,
   k: 3,
   poolSize: 15,
   draftType: 'impartial',

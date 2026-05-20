@@ -130,6 +130,32 @@
   margin-top: 6px;
   font-family: var(--font-mono);
 }
+
+.validation-errors {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: var(--radius);
+}
+
+.validation-error {
+  font-size: 0.85rem;
+  color: #ef4444;
+  font-family: var(--font-mono);
+
+  &::before {
+    content: '! ';
+  }
+}
+
+.btn--disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 .form-actions {
   display: flex;
   justify-content: center;

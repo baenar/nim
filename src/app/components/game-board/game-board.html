@@ -52,15 +52,6 @@
         </div>
       }
 
-      <div class="stacks-area">
-        @for (stack of game.state().stacks; track $index) {
-          <app-disc-stack
-            [height]="stack"
-            [stackIndex]="$index"
-            [selected]="false"
-          />
-        }
-      </div>
     } @else {
       <!-- PLAY PHASE -->
       @if (!game.state().isGameOver) {

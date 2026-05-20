@@ -12,9 +12,33 @@ export class DiscStack {
   readonly selected = input<boolean>(false);
   readonly stackIndex = input<number>(0);
 
-  readonly discs = computed(() => {
+  private static readonly MAX_VISIBLE = 18;
+  private static readonly HALF = 9;
+
+  /** Whether we need to split with an ellipsis */
+  readonly isTruncated = computed(() => this.height() > DiscStack.MAX_VISIBLE);
+
+  /** Bottom discs (always rendered) */
+  readonly bottomDiscs = computed(() => {
     const h = this.height();
-    return Array.from({ length: h }, (_, i) => i);
+    if (h <= DiscStack.MAX_VISIBLE) {
+      return Array.from({ length: h }, (_, i) => i);
+    }
+    return Array.from({ length: DiscStack.HALF }, (_, i) => i);
+  });
+
+  /** Top discs (only rendered when truncated) */
+  readonly topDiscs = computed(() => {
+    const h = this.height();
+    if (h <= DiscStack.MAX_VISIBLE) return [];
+    const startIndex = h - DiscStack.HALF;
+    return Array.from({ length: DiscStack.HALF }, (_, i) => startIndex + i);
+  });
+
+  /** How many discs are hidden in the ellipsis */
+  readonly hiddenCount = computed(() => {
+    const h = this.height();
+    return Math.max(0, h - DiscStack.MAX_VISIBLE);
   });
 
   readonly isEmpty = computed(() => this.height() === 0);

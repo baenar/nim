@@ -76,8 +76,21 @@
       </div>
     </div>
 
+    @if (validationErrors.length > 0) {
+      <div class="validation-errors">
+        @for (err of validationErrors; track err) {
+          <div class="validation-error">{{ err }}</div>
+        }
+      </div>
+    }
+
     <div class="form-actions">
-      <button class="btn btn--primary btn--lg" (click)="startGame()">
+      <button
+        class="btn btn--primary btn--lg"
+        [class.btn--disabled]="!isValid"
+        [disabled]="!isValid"
+        (click)="startGame()"
+      >
         Start Game &rarr;
       </button>
     </div>
