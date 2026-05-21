@@ -34,6 +34,29 @@
 
     <div class="form-section">
       <h3 class="form-section-title">
+        <span class="section-icon">//</span> Opponent
+      </h3>
+
+      <div class="toggle-group">
+        <button
+          class="toggle-btn"
+          [class.active]="opponent === 'computer'"
+          (click)="opponent = 'computer'"
+        >
+          vs Computer
+        </button>
+        <button
+          class="toggle-btn"
+          [class.active]="opponent === 'human'"
+          (click)="opponent = 'human'"
+        >
+          vs Player
+        </button>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <h3 class="form-section-title">
         <span class="section-icon">//</span> Parameters
       </h3>
 
@@ -74,6 +97,17 @@
           <span class="form-hint">Pool = [1, 2, ..., {{ poolSize }}]</span>
         </div>
       </div>
+    </div>
+
+    <div class="form-section">
+      <h3 class="form-section-title">
+        <span class="section-icon">//</span> Extras
+      </h3>
+
+      <label class="checkbox-label">
+        <input type="checkbox" [(ngModel)]="cheatMode" />
+        <span>Cheat sheet (Sprague-Grundy values and Winning/Losing draft states)</span>
+      </label>
     </div>
 
     @if (validationErrors.length > 0) {
