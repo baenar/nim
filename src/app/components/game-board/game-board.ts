@@ -13,6 +13,8 @@ import { XorPanel } from '../xor-panel/xor-panel';
   styleUrl: './game-board.scss',
 })
 export class GameBoard implements OnInit {
+  showExitConfirm = false;
+
   constructor(
     protected game: GameService,
     private router: Router,
@@ -92,11 +94,25 @@ export class GameBoard implements OnInit {
     this.game.makeMove();
   }
 
-  onNewGame(): void {
+  onMenuClick(): void {
+    if (this.game.state().isGameOver) {
+      this.router.navigate(['/']);
+      return;
+    }
+    this.showExitConfirm = true;
+  }
+
+  confirmExit(): void {
+    this.showExitConfirm = false;
     this.router.navigate(['/']);
   }
 
+  cancelExit(): void {
+    this.showExitConfirm = false;
+  }
+
   onRematch(): void {
+    this.showExitConfirm = false;
     this.game.startGame(this.game.config());
   }
 }
