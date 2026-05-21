@@ -6,9 +6,27 @@ interface SubtractionPattern {
   period: boolean[];
 }
 
+export interface DraftPickAnalysis {
+  winning: number[];
+  losing: number[];
+}
+
+export interface SpragueGrundySequence {
+  values: number[];
+  windowSize: number;
+}
+
+interface GrundyCacheState {
+  values: number[];
+  windows: Map<string, number>;
+  windowSize: number;
+  repeatEnd: number | null;
+}
+
 export class DraftSubtractionAi {
   private readonly draftCache = new Map<string, boolean>();
   private readonly subtractionCache = new Map<string, SubtractionPattern>();
+  private readonly grundyCache = new Map<string, GrundyCacheState>();
 
   constructor(private readonly config: DraftSubtractionConfig) {}
 
@@ -27,6 +45,22 @@ export class DraftSubtractionAi {
     return this.randomPick(draft.pool);
   }
 
+  getDraftPickAnalysis(draft: DraftState): DraftPickAnalysis {
+    const winning: number[] = [];
+    const losing: number[] = [];
+
+    for (const value of draft.pool) {
+      const nextSet = this.insertSorted(draft.subtractionSet, value);
+      if (!this.isWinningDraftState(nextSet)) {
+        winning.push(value);
+      } else {
+        losing.push(value);
+      }
+    }
+
+    return { winning, losing };
+  }
+
   pickSubtractionAmount(heapSize: number, subtractionSet: number[]): number {
     const validMoves = subtractionSet.filter(v => v <= heapSize);
     if (validMoves.length === 0) return 1;
@@ -42,6 +76,52 @@ export class DraftSubtractionAi {
     }
 
     return this.randomPick(validMoves);
+  }
+
+  getSpragueGrundySequence(subtractionSet: number[], maxState: number): SpragueGrundySequence {
+    const sortedSet = [...subtractionSet].sort((a, b) => a - b);
+    const key = `${this.config.endCondition}|${sortedSet.join(',')}`;
+    const maxMove = sortedSet[sortedSet.length - 1];
+    const target = Math.max(0, maxState);
+
+    let cache = this.grundyCache.get(key);
+    if (!cache) {
+      cache = {
+        values: [],
+        windows: new Map<string, number>(),
+        windowSize: maxMove,
+        repeatEnd: null,
+      };
+      this.grundyCache.set(key, cache);
+    }
+
+    for (let n = cache.values.length; n <= target; n++) {
+      cache.values[n] = this.computeGrundy(n, sortedSet, cache.values);
+
+      if (cache.repeatEnd === null && n >= maxMove - 1) {
+        const windowStart = n - maxMove + 1;
+        const windowKey = cache.values.slice(windowStart, windowStart + maxMove).join(',');
+        const previousStart = cache.windows.get(windowKey);
+        if (previousStart !== undefined) {
+          cache.repeatEnd = windowStart + maxMove;
+        } else {
+          cache.windows.set(windowKey, windowStart);
+        }
+      }
+
+      if (cache.repeatEnd !== null && n >= cache.repeatEnd - 1) {
+        break;
+      }
+    }
+
+    const endExclusive = cache.repeatEnd !== null && cache.repeatEnd - 1 <= target
+      ? cache.repeatEnd
+      : target + 1;
+
+    return {
+      values: cache.values.slice(0, endExclusive),
+      windowSize: maxMove,
+    };
   }
 
   private isWinningDraftState(selectedSet: number[]): boolean {
@@ -143,6 +223,24 @@ export class DraftSubtractionAi {
       }
     }
     return false;
+  }
+
+  private computeGrundy(
+    heapSize: number,
+    subtractionSet: number[],
+    values: number[],
+  ): number {
+    const reachable = new Set<number>();
+    for (const move of subtractionSet) {
+      if (move > heapSize) break;
+      reachable.add(values[heapSize - move]);
+    }
+
+    let mex = 0;
+    while (reachable.has(mex)) {
+      mex += 1;
+    }
+    return mex;
   }
 
   private insertSorted(source: number[], value: number): number[] {

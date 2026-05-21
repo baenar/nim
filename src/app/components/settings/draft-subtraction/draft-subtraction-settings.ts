@@ -19,6 +19,7 @@ export class DraftSubtractionSettings {
   poolSize = DRAFT_SUBTRACTION_DEFAULTS.poolSize;
   draftType: DraftVariantType = DRAFT_SUBTRACTION_DEFAULTS.draftType;
   opponent = DRAFT_SUBTRACTION_DEFAULTS.opponent;
+  cheatMode = DRAFT_SUBTRACTION_DEFAULTS.cheatMode;
 
   constructor(private router: Router) {}
 
@@ -69,6 +70,7 @@ export class DraftSubtractionSettings {
       k: this.k,
       poolSize: this.poolSize,
       draftType: this.draftType,
+      cheatMode: this.cheatMode,
     };
     this.router.navigate(['/play'], { state: { config } });
   }

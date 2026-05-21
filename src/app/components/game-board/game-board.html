@@ -61,15 +61,38 @@
         </div>
       }
 
+      @if (isDraftCheatEnabled && draftCheatInfo) {
+        <button class="cheat-toggle" (click)="toggleDraftCheat()">
+          {{ showDraftCheat ? 'Hide cheat sheet' : 'Show cheat sheet' }}
+        </button>
+        @if (showDraftCheat) {
+          <div class="cheat-sheet">
+            <div><strong>Winning picks:</strong> {{ draftWinningText }}</div>
+            <div><strong>Losing picks:</strong> {{ draftLosingText }}</div>
+          </div>
+        }
+      }
+
     } @else {
       <!-- PLAY PHASE -->
-      @if (!game.state().isGameOver) {
+      @if (!showGameOverOverlay()) {
         <div class="turn-indicator turn-indicator--play" [class.computer-turn]="game.isComputerTurn()">
-          <div class="turn-section turn-section--phase">
-            <div class="turn-dot"></div>
+          <div
+            class="turn-section turn-section--phase"
+            [style.borderColor]="gameOverHighlightColor ?? null"
+            [style.background]="gameOverHighlightBg ?? null"
+            [style.color]="gameOverHighlightColor ?? null"
+          >
+            <div class="turn-dot" [style.background]="gameOverHighlightColor ?? null"></div>
             <span>Subtraction phase</span>
           </div>
-          <div class="turn-section turn-section--main">
+          <div
+            class="turn-section turn-section--main"
+            [style.borderColor]="gameOverHighlightColor ?? null"
+            [style.background]="gameOverHighlightBg ?? null"
+            [style.color]="gameOverHighlightColor ?? null"
+            [style.boxShadow]="gameOverHighlightShadow ?? null"
+          >
             <span class="turn-text">
               @if (game.isComputerTurn()) {
                 Computer is thinking...
@@ -90,6 +113,27 @@
           }
           &#125;
         </div>
+
+        @if (isDraftCheatEnabled && subtractionCheatInfo) {
+          <div style="margin-bottom: 28px; display: flex; flex-direction: column; align-items: center; gap: 8px;">
+            <button class="cheat-toggle" style="display: inline-flex; align-items: center;" (click)="toggleSubtractionCheat()">
+              {{ showSubtractionCheat ? 'Hide cheat sheet' : 'Show cheat sheet' }}
+            </button>
+            @if (showSubtractionCheat) {
+              <div class="cheat-sheet" style="width: 100%;">
+                <div class="subtraction-set-bar" style="margin-bottom: 0;">
+                  <span class="set-bar-label">Sprague-Grundy function value</span>
+                  <span style="font-family: var(--font-mono);">{{ sgDisplayText }}</span>
+                </div>
+              </div>
+              @if (canToggleSg) {
+                <button class="cheat-toggle" style="margin-top: 6px;" (click)="toggleSgSize()">
+                  {{ showAllSg ? 'Show less' : 'Show more' }}
+                </button>
+              }
+            }
+          </div>
+        }
       }
 
       <div class="stacks-area">
@@ -125,7 +169,7 @@
         </div>
       }
 
-      @if (game.state().isGameOver) {
+      @if (showGameOverOverlay()) {
         <div class="game-over-overlay">
           <div class="game-over-card">
             <div class="game-over-icon">🏆</div>

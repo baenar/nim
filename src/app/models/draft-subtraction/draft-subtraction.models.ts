@@ -8,6 +8,7 @@ export interface DraftSubtractionConfig extends GameConfigBase {
   k: number;
   poolSize: number;
   draftType: DraftVariantType;
+  cheatMode: boolean;
 }
 
 export interface DraftState {
@@ -34,4 +35,5 @@ export const DRAFT_SUBTRACTION_DEFAULTS: DraftSubtractionConfig = {
   k: 3,
   poolSize: 15,
   draftType: 'impartial',
+  cheatMode: false,
 };

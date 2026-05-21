@@ -4,7 +4,7 @@ import { GameConfig } from '../models/game-config.types';
 import { ClassicNimConfig, CLASSIC_NIM_DEFAULTS } from '../models/classic/classic-nim.models';
 import { DraftSubtractionConfig, DraftState } from '../models/draft-subtraction/draft-subtraction.models';
 import { getClassicNimExpertMove, getClassicNimRandomMove } from './classic/classic-nim.ai';
-import { DraftSubtractionAi } from './draft-subtraction/draft-subtraction.ai';
+import { DraftPickAnalysis, DraftSubtractionAi, SpragueGrundySequence } from './draft-subtraction/draft-subtraction.ai';
 
 @Injectable({ providedIn: 'root' })
 export class GameService {
@@ -161,6 +161,23 @@ export class GameService {
 
     const move = this.getAiMove(state, config);
     this.applyMove(move.stackIndex, move.amount);
+  }
+
+  getDraftCheatInfo(): DraftPickAnalysis | null {
+    const config = this._config();
+    if (config.variant !== 'draft-subtraction') return null;
+    const draft = this._draftState();
+    if (!draft || draft.isComplete || !this._draftAi) return null;
+    return this._draftAi.getDraftPickAnalysis(draft);
+  }
+
+  getSubtractionCheatInfo(): SpragueGrundySequence | null {
+    const config = this._config();
+    if (config.variant !== 'draft-subtraction') return null;
+    const draft = this._draftState();
+    if (!draft || !draft.isComplete || !this._draftAi) return null;
+    const heapSize = this._state().stacks[0] ?? 0;
+    return this._draftAi.getSpragueGrundySequence(draft.subtractionSet, heapSize);
   }
 
   private applyMove(stackIndex: number, amount: number): boolean {

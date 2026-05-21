@@ -105,7 +105,7 @@
 .turn-text {
   font-weight: 500;
   font-size: 0.95rem;
-  color: var(--accent);
+  color: inherit;
 }
 
 .turn-section {
@@ -137,7 +137,7 @@
   font-weight: 700;
   background: rgba(0, 194, 255, 0.12);
   border-color: var(--accent);
-  color: var(--text-primary);
+  color: var(--accent);
   box-shadow: 0 10px 24px rgba(0, 194, 255, 0.12);
 
   &::before {
@@ -147,12 +147,8 @@
     top: 8px;
     bottom: 8px;
     width: 4px;
-    background: var(--accent);
+    background: currentColor;
     border-radius: 4px;
-  }
-
-  .turn-text {
-    color: var(--accent);
   }
 }
 
@@ -174,15 +170,20 @@
     background: rgba(251, 191, 36, 0.12);
     border-color: var(--warning);
     box-shadow: 0 10px 24px rgba(251, 191, 36, 0.15);
-
-    &::before {
-      background: var(--warning);
-    }
-
-    .turn-text {
-      color: var(--warning);
-    }
+    color: var(--warning);
   }
+}
+
+.cheat-toggle {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  padding: 4px 0;
+  cursor: pointer;
+}
+
+.cheat-sheet {
+  padding: 16px;
 }
 
 .stacks-area {
