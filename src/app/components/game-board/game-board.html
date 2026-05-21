@@ -43,7 +43,11 @@
             <h4 class="draft-pool-title">Pool P &mdash; choose a number</h4>
             <div class="draft-pool-grid">
               @for (v of draft.pool; track v) {
-                <button class="draft-chip draft-chip--available" (click)="onDraftPick(v)">
+                <button
+                  class="draft-chip draft-chip--available"
+                  [disabled]="game.isComputerTurn()"
+                  (click)="onDraftPick(v)"
+                >
                   {{ v }}
                 </button>
               }

@@ -34,6 +34,29 @@
 
     <div class="form-section">
       <h3 class="form-section-title">
+        <span class="section-icon">//</span> Opponent
+      </h3>
+
+      <div class="toggle-group">
+        <button
+          class="toggle-btn"
+          [class.active]="opponent === 'computer'"
+          (click)="opponent = 'computer'"
+        >
+          vs Computer
+        </button>
+        <button
+          class="toggle-btn"
+          [class.active]="opponent === 'human'"
+          (click)="opponent = 'human'"
+        >
+          vs Player
+        </button>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <h3 class="form-section-title">
         <span class="section-icon">//</span> Parameters
       </h3>
 

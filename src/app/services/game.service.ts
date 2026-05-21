@@ -4,6 +4,7 @@ import { GameConfig } from '../models/game-config.types';
 import { ClassicNimConfig, CLASSIC_NIM_DEFAULTS } from '../models/classic/classic-nim.models';
 import { DraftSubtractionConfig, DraftState } from '../models/draft-subtraction/draft-subtraction.models';
 import { getClassicNimExpertMove, getClassicNimRandomMove } from './classic/classic-nim.ai';
+import { DraftSubtractionAi } from './draft-subtraction/draft-subtraction.ai';
 
 @Injectable({ providedIn: 'root' })
 export class GameService {
@@ -12,6 +13,7 @@ export class GameService {
   private readonly _selectedStack = signal<number | null>(null);
   private readonly _selectedAmount = signal<number>(1);
   private readonly _draftState = signal<DraftState | null>(null);
+  private _draftAi: DraftSubtractionAi | null = null;
 
   readonly config = this._config.asReadonly();
   readonly state = this._state.asReadonly();
@@ -27,8 +29,12 @@ export class GameService {
   readonly isComputerTurn = computed(() => {
     const state = this._state();
     const config = this._config();
-    if (this.isDraftPhase()) return false;
-    return !state.isGameOver && config.opponent === 'computer' && state.currentPlayer === 2;
+    if (config.opponent !== 'computer' || state.isGameOver) return false;
+    if (this.isDraftPhase()) {
+      const draft = this._draftState();
+      return draft?.currentDrafter === 2;
+    }
+    return state.currentPlayer === 2;
   });
 
   readonly maxRemovable = computed(() => {
@@ -67,6 +73,7 @@ export class GameService {
 
     if (config.variant === 'draft-subtraction') {
       const c = config as DraftSubtractionConfig;
+      this._draftAi = new DraftSubtractionAi(c);
       this._draftState.set({
         pool: Array.from({ length: c.poolSize }, (_, i) => i + 1),
         subtractionSet: [],
@@ -76,15 +83,22 @@ export class GameService {
       });
     } else {
       this._draftState.set(null);
+      this._draftAi = null;
     }
   }
 
   /** Player picks a number from the pool during draft phase. */
   draftPick(value: number): boolean {
     const draft = this._draftState();
+    const config = this._config();
     if (!draft || draft.isComplete) return false;
     if (!draft.pool.includes(value)) return false;
+    if (config.opponent === 'computer' && draft.currentDrafter === 2) return false;
 
+    return this.applyDraftPick(draft, value);
+  }
+
+  private applyDraftPick(draft: DraftState, value: number): boolean {
     const newPool = draft.pool.filter(v => v !== value);
     const newSet = [...draft.subtractionSet, value].sort((a, b) => a - b);
     const newPicksRemaining = draft.picksRemaining - 1;
@@ -95,13 +109,13 @@ export class GameService {
       pool: newPool,
       subtractionSet: newSet,
       picksRemaining: newPicksRemaining,
-      currentDrafter: isComplete ? draft.currentDrafter : nextDrafter,
+      currentDrafter: nextDrafter,
       isComplete,
     });
 
-    // When draft completes, Player 2 starts the subtraction phase
+    // When draft completes, the next drafter starts the subtraction phase
     if (isComplete) {
-      this._state.update(s => ({ ...s, currentPlayer: 2 }));
+      this._state.update(s => ({ ...s, currentPlayer: nextDrafter }));
       // Auto-select the single stack so the player can immediately pick an amount
       this._selectedStack.set(0);
       this._selectedAmount.set(newSet[0]);
@@ -132,6 +146,17 @@ export class GameService {
   makeComputerMove(): void {
     const config = this._config();
     const state = this._state();
+    if (config.opponent !== 'computer') return;
+
+    if (this.isDraftPhase()) {
+      const draft = this._draftState();
+      if (!draft || draft.currentDrafter !== 2) return;
+      if (config.variant !== 'draft-subtraction' || !this._draftAi) return;
+      const pick = this._draftAi.pickDraftNumber(draft);
+      this.applyDraftPick(draft, pick);
+      return;
+    }
+
     if (state.isGameOver || state.currentPlayer !== 2) return;
 
     const move = this.getAiMove(state, config);
@@ -227,6 +252,16 @@ export class GameService {
         return c.difficulty === 'expert'
           ? getClassicNimExpertMove(state, c)
           : getClassicNimRandomMove(state, c);
+      }
+      case 'draft-subtraction': {
+        const draft = this._draftState();
+        const ai = this._draftAi;
+        if (draft && draft.isComplete && ai) {
+          return { stackIndex: 0, amount: ai.pickSubtractionAmount(state.stacks[0], draft.subtractionSet) };
+        }
+        const nonEmpty = state.stacks.map((s, i) => ({ s, i })).filter(x => x.s > 0);
+        const chosen = nonEmpty[Math.floor(Math.random() * nonEmpty.length)];
+        return { stackIndex: chosen.i, amount: 1 };
       }
       default:
         // Fallback for unimplemented variants

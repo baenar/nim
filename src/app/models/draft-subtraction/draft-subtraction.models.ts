@@ -28,7 +28,7 @@ export const DRAFT_SUBTRACTION_DEFAULTS: DraftSubtractionConfig = {
   stackCount: 1,
   stackSizes: [40],
   opponent: 'human',
-  difficulty: 'random',
+  difficulty: 'expert',
   endCondition: 'last-wins',
   n: 40,
   k: 3,

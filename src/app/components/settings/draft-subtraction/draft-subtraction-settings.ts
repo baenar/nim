@@ -18,6 +18,7 @@ export class DraftSubtractionSettings {
   k = DRAFT_SUBTRACTION_DEFAULTS.k;
   poolSize = DRAFT_SUBTRACTION_DEFAULTS.poolSize;
   draftType: DraftVariantType = DRAFT_SUBTRACTION_DEFAULTS.draftType;
+  opponent = DRAFT_SUBTRACTION_DEFAULTS.opponent;
 
   constructor(private router: Router) {}
 
@@ -61,8 +62,8 @@ export class DraftSubtractionSettings {
       variant: 'draft-subtraction',
       stackCount: 1,
       stackSizes: [this.n],
-      opponent: 'human',
-      difficulty: 'random',
+      opponent: this.opponent,
+      difficulty: 'expert',
       endCondition: 'last-wins',
       n: this.n,
       k: this.k,

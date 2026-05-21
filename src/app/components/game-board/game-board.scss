@@ -345,6 +345,15 @@
       transform: translateY(-2px);
       box-shadow: 0 4px 12px rgba(0, 194, 255, 0.15);
     }
+
+    &:disabled {
+      cursor: not-allowed;
+      opacity: 0.6;
+      border-color: var(--border-color);
+      color: var(--text-muted);
+      box-shadow: none;
+      transform: none;
+    }
   }
 }
 
