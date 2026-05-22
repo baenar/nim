@@ -12,6 +12,12 @@ The AI evaluates the game differently depending on the current phase:
 2. **[The Draft Phase](03-draft-phase.md):** During the draft, the game state is a combinatorial combination of drafted numbers. The AI uses **Memoized Depth-First Search (DFS)** with an **Early Exit** optimization to traverse the state tree, evaluating draft choices based on the periodic outcomes of the resulting subtraction phases.
 
 ## Table of Contents
+### Impartial Variant (Shared Draft)
 1. [Game Theory Foundations (Sprague-Grundy, P/N States)](01-foundations.md)
 2. [Subtraction Phase Algorithm (Periodicity)](02-subtraction-phase.md)
 3. [Draft Phase Algorithm (DFS & Pruning)](03-draft-phase.md)
+
+### Partisan Variant (Separate Drafts)
+1. [Partisan Foundations (Why SG Fails & Mutual Arrays)](04-partisan-foundations.md)
+2. [Partisan Subtraction Phase (Boolean Tuples)](05-partisan-subtraction-phase.md)
+3. [Partisan Draft Phase (Segregated Minimax)](06-partisan-draft-phase.md)
