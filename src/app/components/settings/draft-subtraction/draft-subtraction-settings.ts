@@ -23,8 +23,30 @@ export class DraftSubtractionSettings {
 
   constructor(private router: Router) {}
 
+  get isPartisan(): boolean {
+    return this.draftType === 'partisan';
+  }
+
   get maxPoolSize(): number {
     return Math.floor(0.4 * this.n);
+  }
+
+  get minPoolSize(): number {
+    if (this.isPartisan) {
+      return Math.max(1, 2 * this.k + 1);
+    }
+    return Math.max(1, this.k + 1);
+  }
+
+  get maxK(): number {
+    if (this.isPartisan) {
+      return Math.max(0, Math.floor((this.poolSize - 1) / 2));
+    }
+    return Math.max(0, this.poolSize - 1);
+  }
+
+  get minK(): number {
+    return this.isPartisan ? 1 : 2;
   }
 
   onNChange(): void {
@@ -40,20 +62,41 @@ export class DraftSubtractionSettings {
     if (this.poolSize < 1) this.poolSize = 1;
   }
 
+  setDraftType(type: DraftVariantType): void {
+    if (this.draftType === type) return;
+    this.draftType = type;
+  }
+
   get isValid(): boolean {
-    return this.n >= 2
-      && this.poolSize > 0
-      && this.poolSize < 0.4 * this.n
-      && this.k > 0
-      && this.k < this.poolSize;
+    if (this.n < 2) return false;
+    if (this.poolSize > this.maxPoolSize) return false;
+    if (this.isPartisan) {
+      return this.k >= 1
+        && this.poolSize >= 2 * this.k + 1;
+    }
+    return this.k >= 2
+      && this.poolSize >= this.k + 1;
   }
 
   get validationErrors(): string[] {
     const errors: string[] = [];
-    if (this.poolSize <= 0) errors.push('p must be greater than 0');
-    if (this.k <= 0) errors.push('k must be greater than 0');
-    if (this.poolSize >= 0.4 * this.n) errors.push('p must be less than 0.4 × N (' + (0.4 * this.n) + ')');
-    if (this.k >= this.poolSize) errors.push('k must be less than p (' + this.poolSize + ')');
+    if (this.isPartisan) {
+      if (this.k < 1) errors.push('k must be at least 1');
+      if (this.poolSize < 2 * this.k + 1) {
+        errors.push('p must be at least 2k + 1 (' + (2 * this.k + 1) + ')');
+      }
+      if (this.poolSize > this.maxPoolSize) {
+        errors.push('p must be at most 0.4 × N (' + this.maxPoolSize + ')');
+      }
+    } else {
+      if (this.k < 2) errors.push('k must be at least 2');
+      if (this.poolSize < this.k + 1) {
+        errors.push('p must be at least k + 1 (' + (this.k + 1) + ')');
+      }
+      if (this.poolSize > this.maxPoolSize) {
+        errors.push('p must be at most 0.4 × N (' + this.maxPoolSize + ')');
+      }
+    }
     return errors;
   }
 

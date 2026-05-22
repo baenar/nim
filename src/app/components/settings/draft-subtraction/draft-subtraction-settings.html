@@ -18,16 +18,16 @@
         <button
           class="toggle-btn"
           [class.active]="draftType === 'impartial'"
-          (click)="draftType = 'impartial'"
+          (click)="setDraftType('impartial')"
         >
           Impartial
         </button>
         <button
-          class="toggle-btn disabled-btn"
+          class="toggle-btn"
           [class.active]="draftType === 'partisan'"
-          disabled
+          (click)="setDraftType('partisan')"
         >
-          Partisan (coming soon)
+          Partisan
         </button>
       </div>
     </div>
@@ -78,8 +78,8 @@
             type="number"
             [(ngModel)]="k"
             (ngModelChange)="onKChange()"
-            min="1"
-            [max]="poolSize"
+            [min]="minK"
+            [max]="maxK"
           />
         </div>
       </div>
@@ -91,7 +91,7 @@
             type="number"
             [(ngModel)]="poolSize"
             (ngModelChange)="onPoolSizeChange()"
-            min="1"
+            [min]="minPoolSize"
             [max]="maxPoolSize"
           />
           <span class="form-hint">Pool = [1, 2, ..., {{ poolSize }}]</span>

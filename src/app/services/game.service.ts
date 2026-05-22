@@ -14,6 +14,7 @@ export class GameService {
   private readonly _selectedAmount = signal<number>(1);
   private readonly _draftState = signal<DraftState | null>(null);
   private _draftAi: DraftSubtractionAi | null = null;
+  private draftCompleteTimer: number | null = null;
 
   readonly config = this._config.asReadonly();
   readonly state = this._state.asReadonly();
@@ -32,6 +33,7 @@ export class GameService {
     if (config.opponent !== 'computer' || state.isGameOver) return false;
     if (this.isDraftPhase()) {
       const draft = this._draftState();
+      if (draft?.isLocked) return false;
       return draft?.currentDrafter === 2;
     }
     return state.currentPlayer === 2;
@@ -55,7 +57,8 @@ export class GameService {
     if (config.variant === 'draft-subtraction') {
       const draft = this._draftState();
       if (!draft || !draft.isComplete) return [];
-      return [...draft.subtractionSet]
+      const set = this.getSubtractionSetForPlayer(draft, this._state().currentPlayer);
+      return [...set]
         .filter(v => v <= stackSize)
         .sort((a, b) => a - b);
     }
@@ -66,6 +69,7 @@ export class GameService {
   });
 
   startGame(config: GameConfig): void {
+    this.clearDraftCompleteTimer();
     this._config.set(config);
     this._state.set(this.createInitialState(config));
     this._selectedStack.set(null);
@@ -73,13 +77,17 @@ export class GameService {
 
     if (config.variant === 'draft-subtraction') {
       const c = config as DraftSubtractionConfig;
+      const isPartisan = c.draftType === 'partisan';
       this._draftAi = new DraftSubtractionAi(c);
       this._draftState.set({
         pool: Array.from({ length: c.poolSize }, (_, i) => i + 1),
         subtractionSet: [],
-        picksRemaining: c.k,
+        subtractionSetP1: [],
+        subtractionSetP2: [],
+        picksRemaining: isPartisan ? c.k * 2 : c.k,
         currentDrafter: 1,
         isComplete: false,
+        isLocked: false,
       });
     } else {
       this._draftState.set(null);
@@ -91,7 +99,7 @@ export class GameService {
   draftPick(value: number): boolean {
     const draft = this._draftState();
     const config = this._config();
-    if (!draft || draft.isComplete) return false;
+    if (!draft || draft.isComplete || draft.isLocked) return false;
     if (!draft.pool.includes(value)) return false;
     if (config.opponent === 'computer' && draft.currentDrafter === 2) return false;
 
@@ -99,26 +107,55 @@ export class GameService {
   }
 
   private applyDraftPick(draft: DraftState, value: number): boolean {
+    if (draft.isLocked) return false;
+    const config = this._config() as DraftSubtractionConfig;
     const newPool = draft.pool.filter(v => v !== value);
-    const newSet = [...draft.subtractionSet, value].sort((a, b) => a - b);
-    const newPicksRemaining = draft.picksRemaining - 1;
-    const isComplete = newPicksRemaining === 0;
+    const isPartisan = config.draftType === 'partisan';
+    let newSet = draft.subtractionSet;
+    let newSetP1 = draft.subtractionSetP1;
+    let newSetP2 = draft.subtractionSetP2;
+
+    if (isPartisan) {
+      if (draft.currentDrafter === 1) {
+        newSetP1 = [...draft.subtractionSetP1, value].sort((a, b) => a - b);
+      } else {
+        newSetP2 = [...draft.subtractionSetP2, value].sort((a, b) => a - b);
+      }
+    } else {
+      newSet = [...draft.subtractionSet, value].sort((a, b) => a - b);
+    }
+
+    const newPicksRemaining = Math.max(0, draft.picksRemaining - 1);
+    const isDraftDone = isPartisan
+      ? newSetP1.length === config.k && newSetP2.length === config.k
+      : newPicksRemaining === 0;
     const nextDrafter: 1 | 2 = draft.currentDrafter === 1 ? 2 : 1;
 
     this._draftState.set({
       pool: newPool,
       subtractionSet: newSet,
-      picksRemaining: newPicksRemaining,
+      subtractionSetP1: newSetP1,
+      subtractionSetP2: newSetP2,
+      picksRemaining: isDraftDone ? 0 : newPicksRemaining,
       currentDrafter: nextDrafter,
-      isComplete,
+      isComplete: false,
+      isLocked: isDraftDone,
     });
 
     // When draft completes, the next drafter starts the subtraction phase
-    if (isComplete) {
-      this._state.update(s => ({ ...s, currentPlayer: nextDrafter }));
-      // Auto-select the single stack so the player can immediately pick an amount
-      this._selectedStack.set(0);
-      this._selectedAmount.set(newSet[0]);
+    if (isDraftDone) {
+      const nextSet = isPartisan
+        ? (nextDrafter === 1 ? newSetP1 : newSetP2)
+        : newSet;
+      this.clearDraftCompleteTimer();
+      this.draftCompleteTimer = window.setTimeout(() => {
+        this._draftState.update(s => s ? ({ ...s, isComplete: true, isLocked: false }) : s);
+        this._state.update(s => ({ ...s, currentPlayer: nextDrafter }));
+        // Auto-select the single stack so the player can immediately pick an amount
+        this._selectedStack.set(0);
+        this._selectedAmount.set(nextSet[0] ?? 1);
+        this.draftCompleteTimer = null;
+      }, 1500);
     }
 
     return true;
@@ -150,7 +187,7 @@ export class GameService {
 
     if (this.isDraftPhase()) {
       const draft = this._draftState();
-      if (!draft || draft.currentDrafter !== 2) return;
+      if (!draft || draft.currentDrafter !== 2 || draft.isLocked) return;
       if (config.variant !== 'draft-subtraction' || !this._draftAi) return;
       const pick = this._draftAi.pickDraftNumber(draft);
       this.applyDraftPick(draft, pick);
@@ -166,6 +203,7 @@ export class GameService {
   getDraftCheatInfo(): DraftPickAnalysis | null {
     const config = this._config();
     if (config.variant !== 'draft-subtraction') return null;
+    if ((config as DraftSubtractionConfig).draftType === 'partisan') return null;
     const draft = this._draftState();
     if (!draft || draft.isComplete || !this._draftAi) return null;
     return this._draftAi.getDraftPickAnalysis(draft);
@@ -174,6 +212,7 @@ export class GameService {
   getSubtractionCheatInfo(): SpragueGrundySequence | null {
     const config = this._config();
     if (config.variant !== 'draft-subtraction') return null;
+    if ((config as DraftSubtractionConfig).draftType === 'partisan') return null;
     const draft = this._draftState();
     if (!draft || !draft.isComplete || !this._draftAi) return null;
     const heapSize = this._state().stacks[0] ?? 0;
@@ -192,7 +231,8 @@ export class GameService {
     if (config.variant === 'draft-subtraction') {
       const draft = this._draftState();
       if (!draft || !draft.isComplete) return false;
-      if (!draft.subtractionSet.includes(amount)) return false;
+      const activeSet = this.getSubtractionSetForPlayer(draft, state.currentPlayer);
+      if (!activeSet.includes(amount)) return false;
     } else {
       const maxTake = this.getMaxTakeForStack(config, state.stacks[stackIndex]);
       if (amount > maxTake) return false;
@@ -209,8 +249,9 @@ export class GameService {
     if (!isGameOver && config.variant === 'draft-subtraction') {
       const draft = this._draftState();
       if (draft?.isComplete) {
-        const minMove = Math.min(...draft.subtractionSet);
-        if (totalRemaining < minMove) {
+        const nextSet = this.getSubtractionSetForPlayer(draft, nextPlayer);
+        const canMove = nextSet.some(v => v <= totalRemaining);
+        if (!canMove) {
           isGameOver = true;
         }
       }
@@ -241,7 +282,8 @@ export class GameService {
       this._selectedStack.set(0);
       const draft = this._draftState();
       if (draft?.isComplete) {
-        const firstValid = draft.subtractionSet.find(v => v <= newStacks[0]);
+        const nextSet = this.getSubtractionSetForPlayer(draft, nextPlayer);
+        const firstValid = nextSet.find(v => v <= newStacks[0]);
         this._selectedAmount.set(firstValid ?? 1);
       }
     } else {
@@ -274,7 +316,8 @@ export class GameService {
         const draft = this._draftState();
         const ai = this._draftAi;
         if (draft && draft.isComplete && ai) {
-          return { stackIndex: 0, amount: ai.pickSubtractionAmount(state.stacks[0], draft.subtractionSet) };
+          const aiSet = this.getSubtractionSetForPlayer(draft, 2);
+          return { stackIndex: 0, amount: ai.pickSubtractionAmount(state.stacks[0], aiSet) };
         }
         const nonEmpty = state.stacks.map((s, i) => ({ s, i })).filter(x => x.s > 0);
         const chosen = nonEmpty[Math.floor(Math.random() * nonEmpty.length)];
@@ -288,6 +331,14 @@ export class GameService {
     }
   }
 
+  private getSubtractionSetForPlayer(draft: DraftState, player: 1 | 2): number[] {
+    const config = this._config() as DraftSubtractionConfig;
+    if (config.draftType === 'partisan') {
+      return player === 1 ? draft.subtractionSetP1 : draft.subtractionSetP2;
+    }
+    return draft.subtractionSet;
+  }
+
   private createInitialState(config: GameConfig): GameState {
     return {
       stacks: [...config.stackSizes],
@@ -297,5 +348,12 @@ export class GameService {
       lastMove: null,
       moveHistory: [],
     };
+  }
+
+  private clearDraftCompleteTimer(): void {
+    if (this.draftCompleteTimer !== null) {
+      clearTimeout(this.draftCompleteTimer);
+      this.draftCompleteTimer = null;
+    }
   }
 }

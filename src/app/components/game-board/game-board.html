@@ -16,33 +16,74 @@
 
     <!-- DRAFT PHASE -->
     @if (game.isDraftPhase()) {
-      <div class="turn-indicator turn-indicator--draft" [class.computer-turn]="game.isComputerTurn()">
+      <div
+        class="turn-indicator turn-indicator--draft"
+        [class.computer-turn]="game.isComputerTurn()"
+        [class.player-one]="game.draftState()?.currentDrafter === 1"
+        [class.player-two]="game.draftState()?.currentDrafter === 2"
+      >
         <div class="turn-section turn-section--phase">
           <div class="turn-dot"></div>
           <span>Draft phase</span>
         </div>
         <div class="turn-section turn-section--main">
-          <span class="turn-text">{{ draftCurrentPlayerLabel }} &mdash; pick a number</span>
+          <span class="turn-text">
+            @if (game.draftState()?.isLocked) {
+              Subtraction phase is starting...
+            } @else {
+              {{ draftCurrentPlayerLabel }} &mdash; pick a number
+            }
+          </span>
         </div>
         <div class="turn-section turn-section--meta">
-          <span>{{ game.draftState()!.picksRemaining }} picks left</span>
+          <span>{{ draftPicksLeft }} picks left</span>
         </div>
       </div>
 
       @if (game.draftState(); as draft) {
         <div class="draft-section">
-          <div class="draft-set">
-            <h4 class="draft-set-title">Subtraction Set S</h4>
-            <div class="draft-set-values">
-              @if (draft.subtractionSet.length === 0) {
-                <span class="draft-empty">(empty)</span>
-              } @else {
-                @for (v of draft.subtractionSet; track v) {
-                  <span class="draft-chip draft-chip--picked">{{ v }}</span>
-                }
-              }
+          @if (isPartisanDraft) {
+            <div class="draft-set draft-set--partisan">
+              <div class="draft-set-column">
+                <h4 class="draft-set-title">Subtraction Set S1</h4>
+                <div class="draft-set-values">
+                  @if (draft.subtractionSetP1.length === 0) {
+                    <span class="draft-empty">(empty)</span>
+                  } @else {
+                    @for (v of draft.subtractionSetP1; track v) {
+                      <span class="draft-chip draft-chip--picked draft-chip--player-one">{{ v }}</span>
+                    }
+                  }
+                </div>
+              </div>
+              <div class="draft-set-divider"></div>
+              <div class="draft-set-column">
+                <h4 class="draft-set-title">Subtraction Set S2</h4>
+                <div class="draft-set-values">
+                  @if (draft.subtractionSetP2.length === 0) {
+                    <span class="draft-empty">(empty)</span>
+                  } @else {
+                    @for (v of draft.subtractionSetP2; track v) {
+                      <span class="draft-chip draft-chip--picked draft-chip--player-two">{{ v }}</span>
+                    }
+                  }
+                </div>
+              </div>
             </div>
-          </div>
+          } @else {
+            <div class="draft-set">
+              <h4 class="draft-set-title">Subtraction Set S</h4>
+              <div class="draft-set-values">
+                @if (draft.subtractionSet.length === 0) {
+                  <span class="draft-empty">(empty)</span>
+                } @else {
+                  @for (v of draft.subtractionSet; track v) {
+                    <span class="draft-chip draft-chip--picked">{{ v }}</span>
+                  }
+                }
+              </div>
+            </div>
+          }
 
           <div class="draft-pool">
             <h4 class="draft-pool-title">Pool P &mdash; choose a number</h4>
@@ -50,7 +91,7 @@
               @for (v of draft.pool; track v) {
                 <button
                   class="draft-chip draft-chip--available"
-                  [disabled]="game.isComputerTurn()"
+                  [disabled]="game.isComputerTurn() || draft.isLocked"
                   (click)="onDraftPick(v)"
                 >
                   {{ v }}
@@ -76,25 +117,32 @@
     } @else {
       <!-- PLAY PHASE -->
       @if (!showGameOverOverlay()) {
-        <div class="turn-indicator turn-indicator--play" [class.computer-turn]="game.isComputerTurn()">
+        <div
+          class="turn-indicator turn-indicator--play"
+          [class.computer-turn]="game.isComputerTurn()"
+          [class.player-one]="game.config().opponent === 'human' && game.state().currentPlayer === 1"
+          [class.player-two]="game.config().opponent === 'human' && game.state().currentPlayer === 2"
+        >
           <div
             class="turn-section turn-section--phase"
-            [style.borderColor]="gameOverHighlightColor ?? null"
-            [style.background]="gameOverHighlightBg ?? null"
-            [style.color]="gameOverHighlightColor ?? null"
+            [style.borderColor]="playHighlightColor ?? null"
+            [style.background]="playPhaseBg ?? null"
+            [style.color]="playHighlightColor ?? null"
           >
-            <div class="turn-dot" [style.background]="gameOverHighlightColor ?? null"></div>
+            <div class="turn-dot" [style.background]="playHighlightColor ?? null"></div>
             <span>Subtraction phase</span>
           </div>
           <div
             class="turn-section turn-section--main"
-            [style.borderColor]="gameOverHighlightColor ?? null"
-            [style.background]="gameOverHighlightBg ?? null"
-            [style.color]="gameOverHighlightColor ?? null"
-            [style.boxShadow]="gameOverHighlightShadow ?? null"
+            [style.borderColor]="playHighlightColor ?? null"
+            [style.background]="playMainBg ?? null"
+            [style.color]="playHighlightColor ?? null"
+            [style.boxShadow]="playHighlightShadow ?? null"
           >
             <span class="turn-text">
-              @if (game.isComputerTurn()) {
+              @if (game.state().isGameOver) {
+                Game over
+              } @else if (game.isComputerTurn()) {
                 Computer is thinking...
               } @else {
                 {{ currentPlayerLabel }}'s turn
@@ -105,14 +153,35 @@
       }
 
       @if (isDraftSubtraction && game.draftState(); as draft) {
-        <div class="subtraction-set-bar">
-          <span class="set-bar-label">S =</span>
-          &#123;
-          @for (v of draft.subtractionSet; track v; let last = $last) {
-            <span class="set-bar-value">{{ v }}</span>@if (!last) {<span class="set-bar-comma">,</span>}
-          }
-          &#125;
-        </div>
+        @if (isPartisanDraft) {
+          <div class="subtraction-set-panel">
+            <div class="subtraction-set-bar">
+              <span class="set-bar-label">S1 =</span>
+              &#123;
+              @for (v of draft.subtractionSetP1; track v; let last = $last) {
+                <span class="set-bar-value set-bar-value--player-one">{{ v }}</span>@if (!last) {<span class="set-bar-comma">,</span>}
+              }
+              &#125;
+            </div>
+            <div class="subtraction-set-bar">
+              <span class="set-bar-label">S2 =</span>
+              &#123;
+              @for (v of draft.subtractionSetP2; track v; let last = $last) {
+                <span class="set-bar-value set-bar-value--player-two">{{ v }}</span>@if (!last) {<span class="set-bar-comma">,</span>}
+              }
+              &#125;
+            </div>
+          </div>
+        } @else {
+          <div class="subtraction-set-bar">
+            <span class="set-bar-label">S =</span>
+            &#123;
+            @for (v of draft.subtractionSet; track v; let last = $last) {
+              <span class="set-bar-value">{{ v }}</span>@if (!last) {<span class="set-bar-comma">,</span>}
+            }
+            &#125;
+          </div>
+        }
 
         @if (isDraftCheatEnabled && subtractionCheatInfo) {
           <div style="margin-bottom: 28px; display: flex; flex-direction: column; align-items: center; gap: 8px;">
