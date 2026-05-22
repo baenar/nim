@@ -99,6 +99,14 @@
       </div>
     </div>
 
+    @if (validationErrors.length > 0) {
+      <div class="validation-errors">
+        @for (err of validationErrors; track err) {
+          <div class="validation-error">{{ err }}</div>
+        }
+      </div>
+    }
+
     <div class="form-section">
       <h3 class="form-section-title">
         <span class="section-icon">//</span> Extras
@@ -109,14 +117,6 @@
         <span>Cheat sheet (Sprague-Grundy values and Winning/Losing draft states)</span>
       </label>
     </div>
-
-    @if (validationErrors.length > 0) {
-      <div class="validation-errors">
-        @for (err of validationErrors; track err) {
-          <div class="validation-error">{{ err }}</div>
-        }
-      </div>
-    }
 
     <div class="form-actions">
       <button
