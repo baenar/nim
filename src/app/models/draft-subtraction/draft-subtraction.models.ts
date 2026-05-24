@@ -16,8 +16,14 @@ export interface DraftState {
   pool: number[];
   /** Shared subtraction set (impartial) */
   subtractionSet: number[];
+  /** Player 1 subtraction set (partisan) */
+  subtractionSetP1: number[];
+  /** Player 2 subtraction set (partisan) */
+  subtractionSetP2: number[];
   /** How many picks remain before draft ends */
   picksRemaining: number;
+  /** Draft is complete but still visible before switching phases */
+  isLocked: boolean;
   /** Who is currently drafting */
   currentDrafter: 1 | 2;
   /** Whether the draft phase is complete */

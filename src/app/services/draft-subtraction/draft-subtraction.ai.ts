@@ -31,6 +31,9 @@ export class DraftSubtractionAi {
   constructor(private readonly config: DraftSubtractionConfig) {}
 
   pickDraftNumber(draft: DraftState): number {
+    if (this.config.draftType === 'partisan') {
+      return this.randomPick(draft.pool);
+    }
     if (this.config.difficulty === 'random') {
       return this.randomPick(draft.pool);
     }
@@ -46,6 +49,9 @@ export class DraftSubtractionAi {
   }
 
   getDraftPickAnalysis(draft: DraftState): DraftPickAnalysis {
+    if (this.config.draftType === 'partisan') {
+      return { winning: [], losing: [] };
+    }
     const winning: number[] = [];
     const losing: number[] = [];
 
@@ -73,6 +79,10 @@ export class DraftSubtractionAi {
   pickSubtractionAmount(heapSize: number, subtractionSet: number[]): number {
     const validMoves = subtractionSet.filter(v => v <= heapSize);
     if (validMoves.length === 0) return 1;
+
+    if (this.config.draftType === 'partisan') {
+      return this.randomPick(validMoves);
+    }
 
     if (this.config.difficulty === 'random') {
       return this.randomPick(validMoves);

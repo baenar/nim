@@ -18,16 +18,16 @@
         <button
           class="toggle-btn"
           [class.active]="draftType === 'impartial'"
-          (click)="draftType = 'impartial'"
+          (click)="setDraftType('impartial')"
         >
           Impartial
         </button>
         <button
-          class="toggle-btn disabled-btn"
+          class="toggle-btn"
           [class.active]="draftType === 'partisan'"
-          disabled
+          (click)="setDraftType('partisan')"
         >
-          Partisan (coming soon)
+          Partisan
         </button>
       </div>
     </div>

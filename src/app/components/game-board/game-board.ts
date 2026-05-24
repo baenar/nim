@@ -65,7 +65,6 @@ export class GameBoard implements OnInit {
     return this.game.config().opponent === 'computer' ? 'Computer' : 'Player 2';
   }
 
-  /** Cheat mode is on for the active variant (classic or draft-subtraction). */
   get cheatMode(): boolean {
     const config = this.game.config();
     if (config.variant === 'classic') return (config as ClassicNimConfig).cheatMode;
@@ -93,6 +92,22 @@ export class GameBoard implements OnInit {
     const p = this.game.draftCheatProgress();
     return !p || p.pending.length > 0;
   });
+  get isDraftCheatEnabled(): boolean {
+    const config = this.game.config();
+    return config.variant === 'draft-subtraction'
+      && (config as DraftSubtractionConfig).cheatMode
+      && (config as DraftSubtractionConfig).draftType === 'impartial';
+  }
+
+  get isPartisanDraft(): boolean {
+    const config = this.game.config();
+    return config.variant === 'draft-subtraction'
+      && (config as DraftSubtractionConfig).draftType === 'partisan';
+  }
+
+  get draftCheatInfo() {
+    return this.game.getDraftCheatInfo();
+  }
 
   get subtractionCheatInfo() {
     return this.game.getSubtractionCheatInfo();
@@ -130,6 +145,48 @@ export class GameBoard implements OnInit {
     return null;
   }
 
+  get playHighlightColor(): string | null {
+    const config = this.game.config();
+    const state = this.game.state();
+    if (config.opponent === 'human' && !state.isGameOver) {
+      return state.currentPlayer === 1 ? 'var(--player-one)' : 'var(--player-two)';
+    }
+    return this.gameOverHighlightColor;
+  }
+
+  get playPhaseBg(): string | null {
+    const config = this.game.config();
+    const state = this.game.state();
+    if (config.opponent === 'human' && !state.isGameOver) {
+      return state.currentPlayer === 1
+        ? 'rgba(168, 85, 247, 0.08)'
+        : 'rgba(252, 211, 77, 0.08)';
+    }
+    return this.gameOverHighlightBg;
+  }
+
+  get playMainBg(): string | null {
+    const config = this.game.config();
+    const state = this.game.state();
+    if (config.opponent === 'human' && !state.isGameOver) {
+      return state.currentPlayer === 1
+        ? 'var(--player-one-dim)'
+        : 'var(--player-two-dim)';
+    }
+    return this.gameOverHighlightBg;
+  }
+
+  get playHighlightShadow(): string | null {
+    const config = this.game.config();
+    const state = this.game.state();
+    if (config.opponent === 'human' && !state.isGameOver) {
+      return state.currentPlayer === 1
+        ? '0 10px 24px rgba(168, 85, 247, 0.2)'
+        : '0 10px 24px rgba(252, 211, 77, 0.2)';
+    }
+    return this.gameOverHighlightShadow;
+  }
+
   get variantLabel(): string {
     const config = this.game.config();
     switch (config.variant) {
@@ -152,6 +209,19 @@ export class GameBoard implements OnInit {
     return this.getPlayerLabel(draft.currentDrafter);
   }
 
+  get draftPicksLeft(): number {
+    const draft = this.game.draftState();
+    if (!draft) return 0;
+    if (this.isPartisanDraft) {
+      const config = this.game.config() as DraftSubtractionConfig;
+      const currentSetSize = draft.currentDrafter === 1
+        ? draft.subtractionSetP1.length
+        : draft.subtractionSetP2.length;
+      return Math.max(0, config.k - currentSetSize);
+    }
+    return draft.picksRemaining;
+  }
+
   onDraftPick(value: number): void {
     this.game.draftPick(value);
   }
@@ -168,6 +238,21 @@ export class GameBoard implements OnInit {
 
   onConfirmMove(): void {
     this.game.makeMove();
+  }
+
+  toggleDraftCheat(): void {
+    this.showDraftCheat = !this.showDraftCheat;
+  }
+
+  toggleSubtractionCheat(): void {
+    this.showSubtractionCheat = !this.showSubtractionCheat;
+    if (!this.showSubtractionCheat) {
+      this.showAllSg = false;
+    }
+  }
+
+  toggleSgSize(): void {
+    this.showAllSg = !this.showAllSg;
   }
 
   onMenuClick(): void {

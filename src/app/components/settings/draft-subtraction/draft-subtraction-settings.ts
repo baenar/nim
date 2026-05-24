@@ -26,12 +26,21 @@ export class DraftSubtractionSettings {
   readonly ABSOLUTE_MAX_POOL_SIZE = 30;
   readonly ABSOLUTE_MAX_K = 8;
 
+  get isPartisan(): boolean {
+    return this.draftType === 'partisan';
+  }
+
   get maxPoolSize(): number {
     return Math.min(this.ABSOLUTE_MAX_POOL_SIZE, Math.floor(0.4 * this.n));
   }
 
   get maxK(): number {
     return Math.min(this.ABSOLUTE_MAX_K, this.poolSize);
+  }
+
+  setDraftType(type: DraftVariantType): void {
+    if (this.draftType === type) return;
+    this.draftType = type;
   }
 
   get isValid(): boolean {

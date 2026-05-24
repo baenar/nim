@@ -1,6 +1,6 @@
 # Draft Phase Algorithm
 
-The draft phase operates on a combinatorial state space rather than a linear number line. Because of this, we cannot use periodicity. However, because the pool of available numbers $P$ is strictly bounded by $P = \lfloor 0.4N \rfloor$, the total number of possible draft combinations is extremely small.
+The draft phase operates on a combinatorial state space rather than a linear number line. Because of this, we cannot use periodicity. However, because the pool of available numbers $P$ is strictly bounded by $P = \lfloor 0.4N \rfloor$, the total number of possible draft combinations is small enough to be fully explored.
 
 The AI solves this phase perfectly using **Memoized Depth-First Search (DFS)** coupled with **Early Exit (Alpha-Beta Pruning)**.
 
