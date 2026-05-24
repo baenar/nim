@@ -276,6 +276,7 @@ export class GameService {
         if (draft && draft.isComplete && ai) {
           return { stackIndex: 0, amount: ai.pickSubtractionAmount(state.stacks[0], draft.subtractionSet) };
         }
+        // Fallback for draft-subtraction
         const nonEmpty = state.stacks.map((s, i) => ({ s, i })).filter(x => x.s > 0);
         const chosen = nonEmpty[Math.floor(Math.random() * nonEmpty.length)];
         return { stackIndex: chosen.i, amount: 1 };
