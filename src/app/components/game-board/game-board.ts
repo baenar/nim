@@ -1,4 +1,4 @@
-import { Component, OnInit, effect, signal } from '@angular/core';
+import { Component, OnInit, effect, signal, computed } from '@angular/core';
 import { Router } from '@angular/router';
 import { GameService } from '../../services/game.service';
 import { GameConfig } from '../../models/game-config.types';
@@ -6,20 +6,18 @@ import { ClassicNimConfig } from '../../models/classic/classic-nim.models';
 import { DraftSubtractionConfig } from '../../models/draft-subtraction/draft-subtraction.models';
 import { DiscStack } from '../disc-stack/disc-stack';
 import { XorPanel } from '../xor-panel/xor-panel';
+import { DraftCheatPanel } from '../draft-cheat-panel/draft-cheat-panel';
+import { SgCheatPanel } from '../sg-cheat-panel/sg-cheat-panel';
 
 @Component({
   selector: 'app-game-board',
-  imports: [DiscStack, XorPanel],
+  imports: [DiscStack, XorPanel, DraftCheatPanel, SgCheatPanel],
   templateUrl: './game-board.html',
   styleUrl: './game-board.scss',
 })
 export class GameBoard implements OnInit {
   showExitConfirm = false;
-  showDraftCheat = false;
-  showSubtractionCheat = false;
-  showAllSg = false;
   readonly showGameOverOverlay = signal(false);
-  private readonly sgDisplayLimit = 60;
   private readonly gameOverDelayMs = 1200;
   private gameOverTimer: number | null = null;
 
@@ -67,53 +65,41 @@ export class GameBoard implements OnInit {
     return this.game.config().opponent === 'computer' ? 'Computer' : 'Player 2';
   }
 
+  /** Cheat mode is on for the active variant (classic or draft-subtraction). */
   get cheatMode(): boolean {
     const config = this.game.config();
-    return config.variant === 'classic' && (config as ClassicNimConfig).cheatMode;
+    if (config.variant === 'classic') return (config as ClassicNimConfig).cheatMode;
+    if (config.variant === 'draft-subtraction') return (config as DraftSubtractionConfig).cheatMode;
+    return false;
+  }
+
+  /** Whether the right-side cheat sidebar should be visible. */
+  get showCheatSidebar(): boolean {
+    return this.cheatMode;
+  }
+
+  get isClassic(): boolean {
+    return this.game.config().variant === 'classic';
   }
 
   get isDraftSubtraction(): boolean {
     return this.game.config().variant === 'draft-subtraction';
   }
 
-  get isDraftCheatEnabled(): boolean {
-    const config = this.game.config();
-    return config.variant === 'draft-subtraction' && (config as DraftSubtractionConfig).cheatMode;
-  }
-
-  get draftCheatInfo() {
-    return this.game.getDraftCheatInfo();
-  }
+  /** Draft cheat data — winning/losing picks computed lazily in background. */
+  readonly draftCheatWinning = computed(() => this.game.draftCheatProgress()?.winning ?? []);
+  readonly draftCheatLosing = computed(() => this.game.draftCheatProgress()?.losing ?? []);
+  readonly draftCheatComputing = computed(() => {
+    const p = this.game.draftCheatProgress();
+    return !p || p.pending.length > 0;
+  });
 
   get subtractionCheatInfo() {
     return this.game.getSubtractionCheatInfo();
   }
 
-  get draftWinningText(): string {
-    const info = this.draftCheatInfo;
-    if (!info) return '';
-    return info.winning.length > 0 ? info.winning.join(' ') : 'none';
-  }
-
-  get draftLosingText(): string {
-    const info = this.draftCheatInfo;
-    if (!info) return '';
-    return info.losing.length > 0 ? info.losing.join(' ') : 'none';
-  }
-
-  get sgDisplayValues(): number[] {
-    const info = this.subtractionCheatInfo;
-    if (!info) return [];
-    return this.showAllSg ? info.values : info.values.slice(0, this.sgDisplayLimit);
-  }
-
-  get sgDisplayText(): string {
-    return `[${this.sgDisplayValues.join(', ')}]`;
-  }
-
-  get canToggleSg(): boolean {
-    const info = this.subtractionCheatInfo;
-    return !!info && info.values.length > this.sgDisplayLimit;
+  get sgValues(): number[] {
+    return this.subtractionCheatInfo?.values ?? [];
   }
 
   get showGameOverWinHighlight(): boolean {
@@ -182,21 +168,6 @@ export class GameBoard implements OnInit {
 
   onConfirmMove(): void {
     this.game.makeMove();
-  }
-
-  toggleDraftCheat(): void {
-    this.showDraftCheat = !this.showDraftCheat;
-  }
-
-  toggleSubtractionCheat(): void {
-    this.showSubtractionCheat = !this.showSubtractionCheat;
-    if (!this.showSubtractionCheat) {
-      this.showAllSg = false;
-    }
-  }
-
-  toggleSgSize(): void {
-    this.showAllSg = !this.showAllSg;
   }
 
   onMenuClick(): void {

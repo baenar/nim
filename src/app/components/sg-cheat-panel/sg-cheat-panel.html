@@ -1,0 +1,37 @@
+<div class="sg-cheat-panel">
+  <h4 class="sg-title">// Sprague-Grundy Values</h4>
+
+  @if (currentGrundy() !== null) {
+    <div class="sg-current">
+      <span class="sg-current-label">G({{ heapSize() }}) =</span>
+      <span
+        class="sg-current-value"
+        [class.sg-zero]="currentGrundy() === 0"
+        [class.sg-nonzero]="currentGrundy() !== 0"
+      >{{ currentGrundy() }}</span>
+    </div>
+
+    <div class="sg-verdict" [class.losing]="currentGrundy() === 0" [class.winning]="currentGrundy() !== 0">
+      @if (currentGrundy() === 0) {
+        Losing position
+      } @else {
+        Winning position
+      }
+    </div>
+  }
+
+  <div class="sg-sequence">
+    <div class="sg-sequence-label">G(0) &hellip; G({{ values().length - 1 }})</div>
+    <div class="sg-sequence-grid">
+      @for (v of values(); track $index) {
+        <span
+          class="sg-cell"
+          [class.sg-cell--zero]="v === 0"
+          [class.sg-cell--current]="$index === heapSize()"
+          [attr.data-index]="$index"
+          [attr.aria-label]="'G(' + $index + ') = ' + v"
+        >{{ v }}</span>
+      }
+    </div>
+  </div>
+</div>

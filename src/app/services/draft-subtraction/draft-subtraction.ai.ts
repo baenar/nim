@@ -50,8 +50,7 @@ export class DraftSubtractionAi {
     const losing: number[] = [];
 
     for (const value of draft.pool) {
-      const nextSet = this.insertSorted(draft.subtractionSet, value);
-      if (!this.isWinningDraftState(nextSet)) {
+      if (this.isDraftPickWinningForCurrent(draft.subtractionSet, value)) {
         winning.push(value);
       } else {
         losing.push(value);
@@ -59,6 +58,16 @@ export class DraftSubtractionAi {
     }
 
     return { winning, losing };
+  }
+
+  /**
+   * Evaluate a single draft pick. Returns true if picking `value` from the
+   * current `selectedSet` leaves the opponent in a losing draft state
+   * (i.e. the pick is winning for the current drafter).
+   */
+  isDraftPickWinningForCurrent(selectedSet: number[], value: number): boolean {
+    const nextSet = this.insertSorted(selectedSet, value);
+    return !this.isWinningDraftState(nextSet);
   }
 
   pickSubtractionAmount(heapSize: number, subtractionSet: number[]): number {

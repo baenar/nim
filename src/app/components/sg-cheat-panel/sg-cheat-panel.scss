@@ -1,0 +1,179 @@
+.sg-cheat-panel {
+  padding: 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+}
+
+.sg-title {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 16px;
+}
+
+.sg-current {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 10px;
+  padding: 10px 12px;
+  background: rgba(0, 194, 255, 0.05);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+}
+
+.sg-current-label {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.sg-current-value {
+  font-family: var(--font-mono);
+  font-size: 1.4rem;
+  font-weight: 700;
+
+  &.sg-zero {
+    color: var(--success, #4ade80);
+  }
+
+  &.sg-nonzero {
+    color: var(--accent);
+  }
+}
+
+.sg-verdict {
+  font-size: 0.78rem;
+  font-family: var(--font-mono);
+  text-align: center;
+  padding: 6px 10px;
+  border-radius: var(--radius);
+  margin-bottom: 14px;
+
+  &.losing {
+    color: var(--success, #4ade80);
+    background: rgba(74, 222, 128, 0.08);
+  }
+
+  &.winning {
+    color: var(--accent);
+    background: rgba(0, 194, 255, 0.08);
+  }
+}
+
+.sg-sequence {
+  padding-top: 12px;
+  border-top: 1px solid rgba(42, 53, 80, 0.4);
+}
+
+.sg-sequence-label {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 6px;
+}
+
+.sg-sequence-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.sg-cell {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 6px;
+  border-radius: 4px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: help;
+  transition: all 100ms ease-out;
+
+  &:hover {
+    background: var(--accent);
+    color: var(--bg-primary);
+    border-color: var(--accent);
+    transform: translateY(-1px);
+    z-index: 2;
+  }
+
+  // Tooltip — pure CSS, shows the index G(n)
+  &::after {
+    content: 'G(' attr(data-index) ')';
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 4px 8px;
+    background: var(--bg-primary);
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    border-radius: 4px;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    font-weight: 600;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 120ms ease-out;
+    z-index: 10;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  }
+
+  // Tooltip arrow
+  &::before {
+    content: '';
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 5px solid var(--accent);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 120ms ease-out;
+    z-index: 10;
+  }
+
+  &:hover::after,
+  &:hover::before {
+    opacity: 1;
+  }
+
+  &--zero {
+    color: var(--success, #4ade80);
+    background: rgba(74, 222, 128, 0.08);
+    border-color: rgba(74, 222, 128, 0.3);
+  }
+
+  &--current {
+    background: rgba(0, 194, 255, 0.15);
+    border-color: var(--accent);
+    color: var(--accent);
+    box-shadow: 0 0 0 1px var(--accent);
+  }
+
+  &--current.sg-cell--zero {
+    background: rgba(74, 222, 128, 0.18);
+    border-color: var(--success, #4ade80);
+    color: var(--success, #4ade80);
+    box-shadow: 0 0 0 1px var(--success, #4ade80);
+  }
+}
+

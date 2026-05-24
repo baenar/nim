@@ -1,4 +1,4 @@
-<div class="board-wrapper" [class.has-cheat-panel]="cheatMode">
+<div class="board-wrapper" [class.has-cheat-panel]="showCheatSidebar">
   <div class="board-container">
     <div class="board-header">
       <button class="back-btn" (click)="onMenuClick()">← Menu</button>
@@ -61,18 +61,6 @@
         </div>
       }
 
-      @if (isDraftCheatEnabled && draftCheatInfo) {
-        <button class="cheat-toggle" (click)="toggleDraftCheat()">
-          {{ showDraftCheat ? 'Hide cheat sheet' : 'Show cheat sheet' }}
-        </button>
-        @if (showDraftCheat) {
-          <div class="cheat-sheet">
-            <div><strong>Winning picks:</strong> {{ draftWinningText }}</div>
-            <div><strong>Losing picks:</strong> {{ draftLosingText }}</div>
-          </div>
-        }
-      }
-
     } @else {
       <!-- PLAY PHASE -->
       @if (!showGameOverOverlay()) {
@@ -113,27 +101,6 @@
           }
           &#125;
         </div>
-
-        @if (isDraftCheatEnabled && subtractionCheatInfo) {
-          <div style="margin-bottom: 28px; display: flex; flex-direction: column; align-items: center; gap: 8px;">
-            <button class="cheat-toggle" style="display: inline-flex; align-items: center;" (click)="toggleSubtractionCheat()">
-              {{ showSubtractionCheat ? 'Hide cheat sheet' : 'Show cheat sheet' }}
-            </button>
-            @if (showSubtractionCheat) {
-              <div class="cheat-sheet" style="width: 100%;">
-                <div class="subtraction-set-bar" style="margin-bottom: 0;">
-                  <span class="set-bar-label">Sprague-Grundy function value</span>
-                  <span style="font-family: var(--font-mono);">{{ sgDisplayText }}</span>
-                </div>
-              </div>
-              @if (canToggleSg) {
-                <button class="cheat-toggle" style="margin-top: 6px;" (click)="toggleSgSize()">
-                  {{ showAllSg ? 'Show less' : 'Show more' }}
-                </button>
-              }
-            }
-          </div>
-        }
       }
 
       <div class="stacks-area">
@@ -198,9 +165,24 @@
     }
   </div>
 
-  @if (cheatMode) {
+  @if (showCheatSidebar) {
     <aside class="cheat-sidebar">
-      <app-xor-panel [stacks]="game.state().stacks" [endCondition]="game.config().endCondition" />
+      @if (isClassic) {
+        <app-xor-panel [stacks]="game.state().stacks" [endCondition]="game.config().endCondition" />
+      } @else if (isDraftSubtraction) {
+        @if (game.isDraftPhase()) {
+          <app-draft-cheat-panel
+            [winning]="draftCheatWinning()"
+            [losing]="draftCheatLosing()"
+            [isComputing]="draftCheatComputing()"
+          />
+        } @else {
+          <app-sg-cheat-panel
+            [values]="sgValues"
+            [heapSize]="game.state().stacks[0]"
+          />
+        }
+      }
     </aside>
   }
 

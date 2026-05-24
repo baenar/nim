@@ -1,0 +1,44 @@
+<div class="draft-cheat-panel">
+  <h4 class="cheat-title">// Draft Analysis</h4>
+
+  @if (isComputing()) {
+    <div class="cheat-spinner">
+      <div class="spinner"></div>
+      <span class="spinner-text">Analyzing picks&hellip;</span>
+    </div>
+  }
+
+  <div class="cheat-row">
+    <span class="cheat-row-label cheat-row-label--winning">Winning</span>
+    <div class="cheat-row-values">
+      @if (winning().length === 0) {
+        @if (isComputing()) {
+          <span class="cheat-empty">&hellip;</span>
+        } @else {
+          <span class="cheat-empty">none</span>
+        }
+      } @else {
+        @for (v of winning(); track v) {
+          <span class="cheat-chip cheat-chip--winning">{{ v }}</span>
+        }
+      }
+    </div>
+  </div>
+
+  <div class="cheat-row">
+    <span class="cheat-row-label cheat-row-label--losing">Losing</span>
+    <div class="cheat-row-values">
+      @if (losing().length === 0) {
+        @if (isComputing()) {
+          <span class="cheat-empty">&hellip;</span>
+        } @else {
+          <span class="cheat-empty">none</span>
+        }
+      } @else {
+        @for (v of losing(); track v) {
+          <span class="cheat-chip cheat-chip--losing">{{ v }}</span>
+        }
+      }
+    </div>
+  </div>
+</div>

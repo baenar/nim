@@ -6,6 +6,13 @@ import { DraftSubtractionConfig, DraftState } from '../models/draft-subtraction/
 import { getClassicNimExpertMove, getClassicNimRandomMove } from './classic/classic-nim.ai';
 import { DraftPickAnalysis, DraftSubtractionAi, SpragueGrundySequence } from './draft-subtraction/draft-subtraction.ai';
 
+/** Progressive (background-computed) draft cheat info. */
+export interface DraftCheatProgress {
+  winning: number[];
+  losing: number[];
+  pending: number[];
+}
+
 @Injectable({ providedIn: 'root' })
 export class GameService {
   private readonly _config = signal<GameConfig>({ ...CLASSIC_NIM_DEFAULTS });
@@ -14,12 +21,15 @@ export class GameService {
   private readonly _selectedAmount = signal<number>(1);
   private readonly _draftState = signal<DraftState | null>(null);
   private _draftAi: DraftSubtractionAi | null = null;
+  private readonly _draftCheatProgress = signal<DraftCheatProgress | null>(null);
+  private _draftCheatTaskId = 0;
 
   readonly config = this._config.asReadonly();
   readonly state = this._state.asReadonly();
   readonly selectedStack = this._selectedStack.asReadonly();
   readonly selectedAmount = this._selectedAmount.asReadonly();
   readonly draftState = this._draftState.asReadonly();
+  readonly draftCheatProgress = this._draftCheatProgress.asReadonly();
 
   readonly isDraftPhase = computed(() => {
     const draft = this._draftState();
@@ -81,10 +91,84 @@ export class GameService {
         currentDrafter: 1,
         isComplete: false,
       });
+      this.startDraftCheatComputation();
     } else {
       this._draftState.set(null);
       this._draftAi = null;
+      this.cancelDraftCheatComputation();
+      this._draftCheatProgress.set(null);
     }
+  }
+
+  /**
+   * Kick off background, chunked computation of which pool picks are
+   * winning/losing for the current drafter. Uses setTimeout(0) between
+   * picks so the UI stays responsive. Any previously running task is
+   * cancelled (via task-id check).
+   */
+  private startDraftCheatComputation(): void {
+    this.cancelDraftCheatComputation();
+
+    const config = this._config();
+    if (config.variant !== 'draft-subtraction') {
+      this._draftCheatProgress.set(null);
+      return;
+    }
+    if (!(config as DraftSubtractionConfig).cheatMode) {
+      this._draftCheatProgress.set(null);
+      return;
+    }
+    const draft = this._draftState();
+    if (!draft || draft.isComplete) {
+      this._draftCheatProgress.set(null);
+      return;
+    }
+    const ai = this._draftAi;
+    if (!ai) {
+      this._draftCheatProgress.set(null);
+      return;
+    }
+
+    const taskId = ++this._draftCheatTaskId;
+    const pool = [...draft.pool];
+    const currentSet = [...draft.subtractionSet];
+
+    // Initial state — everything pending
+    this._draftCheatProgress.set({
+      winning: [],
+      losing: [],
+      pending: [...pool],
+    });
+
+    const evaluateNext = (index: number): void => {
+      // Cancelled or superseded
+      if (taskId !== this._draftCheatTaskId) return;
+      if (index >= pool.length) return;
+
+      const value = pool[index];
+      const isWinning = ai.isDraftPickWinningForCurrent(currentSet, value);
+
+      const progress = this._draftCheatProgress();
+      if (!progress) return;
+
+      const winning = isWinning
+        ? [...progress.winning, value].sort((a, b) => a - b)
+        : progress.winning;
+      const losing = !isWinning
+        ? [...progress.losing, value].sort((a, b) => a - b)
+        : progress.losing;
+      const pending = progress.pending.filter(v => v !== value);
+
+      this._draftCheatProgress.set({ winning, losing, pending });
+
+      setTimeout(() => evaluateNext(index + 1), 0);
+    };
+
+    setTimeout(() => evaluateNext(0), 0);
+  }
+
+  private cancelDraftCheatComputation(): void {
+    this._draftCheatTaskId++;
   }
 
   /** Player picks a number from the pool during draft phase. */
@@ -119,6 +203,12 @@ export class GameService {
       // Auto-select the single stack so the player can immediately pick an amount
       this._selectedStack.set(0);
       this._selectedAmount.set(newSet[0]);
+      // Draft done — clear pending cheat task
+      this.cancelDraftCheatComputation();
+      this._draftCheatProgress.set(null);
+    } else {
+      // Recompute cheat analysis for the new draft state
+      this.startDraftCheatComputation();
     }
 
     return true;
