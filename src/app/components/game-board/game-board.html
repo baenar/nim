@@ -246,6 +246,14 @@
             [losing]="draftCheatLosing()"
             [isComputing]="draftCheatComputing()"
           />
+        } @else if (isPartisanDraft && partisanSubtractionInfo) {
+          <app-partisan-subtraction-panel
+            [p1Win]="partisanSubtractionInfo.p1Win"
+            [p2Win]="partisanSubtractionInfo.p2Win"
+            [prePeriodLength]="partisanSubtractionInfo.prePeriodLength"
+            [periodLength]="partisanSubtractionInfo.periodLength"
+            [heapSize]="game.state().stacks[0]"
+          />
         } @else {
           <app-sg-cheat-panel
             [values]="sgValues"

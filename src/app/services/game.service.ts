@@ -4,7 +4,7 @@ import { GameConfig } from '../models/game-config.types';
 import { ClassicNimConfig, CLASSIC_NIM_DEFAULTS } from '../models/classic/classic-nim.models';
 import { DraftSubtractionConfig, DraftState } from '../models/draft-subtraction/draft-subtraction.models';
 import { getClassicNimExpertMove, getClassicNimRandomMove } from './classic/classic-nim.ai';
-import { DraftPickAnalysis, DraftSubtractionAi, SpragueGrundySequence } from './draft-subtraction/draft-subtraction.ai';
+import { DraftPickAnalysis, DraftSubtractionAi, PartisanSubtractionPattern, SpragueGrundySequence } from './draft-subtraction/draft-subtraction.ai';
 
 /** Progressive (background-computed) draft cheat info. */
 export interface DraftCheatProgress {
@@ -139,7 +139,17 @@ export class GameService {
 
     const taskId = ++this._draftCheatTaskId;
     const pool = [...draft.pool];
-    const currentSet = [...draft.subtractionSet];
+    // Snapshot the full draft state so async evaluation uses immutable inputs
+    const draftSnapshot: DraftState = {
+      pool: [...draft.pool],
+      subtractionSet: [...draft.subtractionSet],
+      subtractionSetP1: [...draft.subtractionSetP1],
+      subtractionSetP2: [...draft.subtractionSetP2],
+      picksRemaining: draft.picksRemaining,
+      currentDrafter: draft.currentDrafter,
+      isComplete: draft.isComplete,
+      isLocked: draft.isLocked,
+    };
 
     // Initial state — everything pending
     this._draftCheatProgress.set({
@@ -154,7 +164,7 @@ export class GameService {
       if (index >= pool.length) return;
 
       const value = pool[index];
-      const isWinning = ai.isDraftPickWinningForCurrent(currentSet, value);
+      const isWinning = ai.isDraftPickWinningForCurrent(draftSnapshot, value);
 
       const progress = this._draftCheatProgress();
       if (!progress) return;
@@ -295,7 +305,6 @@ export class GameService {
   getDraftCheatInfo(): DraftPickAnalysis | null {
     const config = this._config();
     if (config.variant !== 'draft-subtraction') return null;
-    if ((config as DraftSubtractionConfig).draftType === 'partisan') return null;
     const draft = this._draftState();
     if (!draft || draft.isComplete || !this._draftAi) return null;
     return this._draftAi.getDraftPickAnalysis(draft);
@@ -304,11 +313,22 @@ export class GameService {
   getSubtractionCheatInfo(): SpragueGrundySequence | null {
     const config = this._config();
     if (config.variant !== 'draft-subtraction') return null;
+    // SG values only meaningful for impartial
     if ((config as DraftSubtractionConfig).draftType === 'partisan') return null;
     const draft = this._draftState();
     if (!draft || !draft.isComplete || !this._draftAi) return null;
     const heapSize = this._state().stacks[0] ?? 0;
     return this._draftAi.getSpragueGrundySequence(draft.subtractionSet, heapSize);
+  }
+
+  /** Partisan-variant play-phase cheat: P1_Win[] and P2_Win[] arrays. */
+  getPartisanSubtractionCheatInfo(): PartisanSubtractionPattern | null {
+    const config = this._config();
+    if (config.variant !== 'draft-subtraction') return null;
+    if ((config as DraftSubtractionConfig).draftType !== 'partisan') return null;
+    const draft = this._draftState();
+    if (!draft || !draft.isComplete || !this._draftAi) return null;
+    return this._draftAi.getPartisanSubtractionInfo(draft.subtractionSetP1, draft.subtractionSetP2);
   }
 
   private applyMove(stackIndex: number, amount: number): boolean {
@@ -409,7 +429,12 @@ export class GameService {
         const ai = this._draftAi;
         if (draft && draft.isComplete && ai) {
           const aiSet = this.getSubtractionSetForPlayer(draft, 2);
-          return { stackIndex: 0, amount: ai.pickSubtractionAmount(state.stacks[0], aiSet) };
+          const dsConfig = config as DraftSubtractionConfig;
+          // For partisan: pass opponent's (P1's) set so AI can use the partisan pattern
+          const opponentSet = dsConfig.draftType === 'partisan'
+            ? this.getSubtractionSetForPlayer(draft, 1)
+            : undefined;
+          return { stackIndex: 0, amount: ai.pickSubtractionAmount(state.stacks[0], aiSet, opponentSet) };
         }
         // Fallback for draft-subtraction
         const nonEmpty = state.stacks.map((s, i) => ({ s, i })).filter(x => x.s > 0);

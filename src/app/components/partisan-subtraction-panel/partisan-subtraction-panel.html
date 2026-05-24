@@ -1,0 +1,53 @@
+<div class="partisan-panel">
+  <h4 class="panel-title">// Partisan W/L Analysis</h4>
+
+  @if (currentP1() !== null && currentP2() !== null) {
+    <div class="current-row">
+      <div class="current-cell">
+        <span class="current-label">P1_Win({{ heapSize() }}) =</span>
+        <span class="current-value" [class.win]="currentP1()" [class.lose]="!currentP1()">
+          {{ currentP1() ? 'T' : 'F' }}
+        </span>
+      </div>
+      <div class="current-cell">
+        <span class="current-label">P2_Win({{ heapSize() }}) =</span>
+        <span class="current-value" [class.win]="currentP2()" [class.lose]="!currentP2()">
+          {{ currentP2() ? 'T' : 'F' }}
+        </span>
+      </div>
+    </div>
+  }
+
+  <div class="row-label row-label--p1">P1_Win[0 &hellip; {{ displayLength() - 1 }}]</div>
+  <div class="cells-grid">
+    @for (v of p1Win(); track $index) {
+      <span
+        class="cell"
+        [class.cell--win]="v"
+        [class.cell--lose]="!v"
+        [class.cell--current]="$index === heapSize()"
+        [attr.data-index]="$index"
+        [attr.aria-label]="'P1_Win(' + $index + ') = ' + (v ? 'T' : 'F')"
+      >{{ v ? 'T' : 'F' }}</span>
+    }
+  </div>
+
+  <div class="row-label row-label--p2">P2_Win[0 &hellip; {{ displayLength() - 1 }}]</div>
+  <div class="cells-grid">
+    @for (v of p2Win(); track $index) {
+      <span
+        class="cell"
+        [class.cell--win]="v"
+        [class.cell--lose]="!v"
+        [class.cell--current]="$index === heapSize()"
+        [attr.data-index]="$index"
+        [attr.aria-label]="'P2_Win(' + $index + ') = ' + (v ? 'T' : 'F')"
+      >{{ v ? 'T' : 'F' }}</span>
+    }
+  </div>
+
+  <div class="period-info">
+    pre-period: <strong>{{ prePeriodLength() }}</strong> &middot;
+    period: <strong>{{ periodLength() }}</strong>
+  </div>
+</div>

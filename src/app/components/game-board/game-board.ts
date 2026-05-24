@@ -8,10 +8,11 @@ import { DiscStack } from '../disc-stack/disc-stack';
 import { XorPanel } from '../xor-panel/xor-panel';
 import { DraftCheatPanel } from '../draft-cheat-panel/draft-cheat-panel';
 import { SgCheatPanel } from '../sg-cheat-panel/sg-cheat-panel';
+import { PartisanSubtractionPanel } from '../partisan-subtraction-panel/partisan-subtraction-panel';
 
 @Component({
   selector: 'app-game-board',
-  imports: [DiscStack, XorPanel, DraftCheatPanel, SgCheatPanel],
+  imports: [DiscStack, XorPanel, DraftCheatPanel, SgCheatPanel, PartisanSubtractionPanel],
   templateUrl: './game-board.html',
   styleUrl: './game-board.scss',
 })
@@ -74,11 +75,7 @@ export class GameBoard implements OnInit {
 
   /** Whether the right-side cheat sidebar should be visible. */
   get showCheatSidebar(): boolean {
-    if (!this.cheatMode) return false;
-    // Partisan draft-subtraction doesn't support cheat analysis (asymmetric sets,
-    // each player has their own subtraction game). Hide the sidebar in that case.
-    if (this.isPartisanDraft) return false;
-    return true;
+    return this.cheatMode;
   }
 
   get isClassic(): boolean {
@@ -115,6 +112,10 @@ export class GameBoard implements OnInit {
 
   get subtractionCheatInfo() {
     return this.game.getSubtractionCheatInfo();
+  }
+
+  get partisanSubtractionInfo() {
+    return this.game.getPartisanSubtractionCheatInfo();
   }
 
   get sgValues(): number[] {
