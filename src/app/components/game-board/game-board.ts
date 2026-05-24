@@ -74,7 +74,11 @@ export class GameBoard implements OnInit {
 
   /** Whether the right-side cheat sidebar should be visible. */
   get showCheatSidebar(): boolean {
-    return this.cheatMode;
+    if (!this.cheatMode) return false;
+    // Partisan draft-subtraction doesn't support cheat analysis (asymmetric sets,
+    // each player has their own subtraction game). Hide the sidebar in that case.
+    if (this.isPartisanDraft) return false;
+    return true;
   }
 
   get isClassic(): boolean {
@@ -238,21 +242,6 @@ export class GameBoard implements OnInit {
 
   onConfirmMove(): void {
     this.game.makeMove();
-  }
-
-  toggleDraftCheat(): void {
-    this.showDraftCheat = !this.showDraftCheat;
-  }
-
-  toggleSubtractionCheat(): void {
-    this.showSubtractionCheat = !this.showSubtractionCheat;
-    if (!this.showSubtractionCheat) {
-      this.showAllSg = false;
-    }
-  }
-
-  toggleSgSize(): void {
-    this.showAllSg = !this.showAllSg;
   }
 
   onMenuClick(): void {

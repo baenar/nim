@@ -171,34 +171,6 @@
           </div>
         }
 
-        @if (isDraftCheatEnabled && subtractionCheatInfo) {
-          <div style="margin-bottom: 28px; display: flex; flex-direction: column; align-items: center; gap: 8px;">
-            <button class="cheat-toggle" style="display: inline-flex; align-items: center;" (click)="toggleSubtractionCheat()">
-              {{ showSubtractionCheat ? 'Hide cheat sheet' : 'Show cheat sheet' }}
-            </button>
-            @if (showSubtractionCheat) {
-              <div class="cheat-sheet" style="width: 100%;">
-                <div class="subtraction-set-bar" style="margin-bottom: 0;">
-                  <span class="set-bar-label">Sprague-Grundy function value</span>
-                  <span style="font-family: var(--font-mono);">{{ sgDisplayText }}</span>
-                </div>
-              </div>
-              @if (canToggleSg) {
-                <button class="cheat-toggle" style="margin-top: 6px;" (click)="toggleSgSize()">
-                  {{ showAllSg ? 'Show less' : 'Show more' }}
-                </button>
-              }
-            }
-          </div>
-        }
-        <div class="subtraction-set-bar">
-          <span class="set-bar-label">S =</span>
-          &#123;
-          @for (v of draft.subtractionSet; track v; let last = $last) {
-            <span class="set-bar-value">{{ v }}</span>@if (!last) {<span class="set-bar-comma">,</span>}
-          }
-          &#125;
-        </div>
       }
 
       <div class="stacks-area">
