@@ -45,8 +45,23 @@ export class DraftSubtractionAi {
   // ---- Partisan caches ----
   /** Cache for partisan subtraction patterns, keyed by `endCondition|S1|S2`. */
   private readonly partisanPatternCache = new Map<string, PartisanSubtractionPattern>();
-  /** Transposition table for partisan minimax. Key = `S1|S2|turn`, value = "P1 wins from here". */
+  /**
+   * Transposition table for partisan minimax - uses bitmask-based keys.
+   * Key = `s1Mask|s2Mask|turn` (base-36 strings, very compact and fast to hash).
+   */
   private readonly partisanDraftCache = new Map<string, boolean>();
+  /**
+   * Killer-move heuristic: best move found at each depth across calls.
+   * Trying this move first often produces immediate α/β cutoffs.
+   * Keyed by depth (= |S1| + |S2|).
+   */
+  private readonly killerMoves = new Map<number, number>();
+  /**
+   * Per-depth buffers for ordered bit iteration - avoids both allocation
+   * AND the bug of shared mutable state across recursive calls.
+   * Index = depth (max 2k = ~16 for realistic params).
+   */
+  private readonly orderingBuffers: number[][] = [];
 
   constructor(private readonly config: DraftSubtractionConfig) {}
 
@@ -77,6 +92,9 @@ export class DraftSubtractionAi {
   }
 
   getDraftPickAnalysis(draft: DraftState): DraftPickAnalysis {
+    // Note: killer-move heuristics persist across calls intentionally -
+    // they're just hints, never incorrect, and accumulated knowledge helps
+    // future pruning.
     const winning: number[] = [];
     const losing: number[] = [];
 
@@ -316,20 +334,24 @@ export class DraftSubtractionAi {
    * Evaluate one partisan draft pick. Returns true if picking `value` is winning
    * for the current drafter (puts the opponent in a losing state).
    *
-   * Uses minimax + α-β + transposition table internally via `evaluatePartisanState`.
+   * Uses bitmask-based minimax + α-β + transposition table + killer-move heuristic.
    */
   private isPartisanDraftPickWinning(draft: DraftState, value: number): boolean {
     const currentDrafter = draft.currentDrafter;
-    let newS1 = draft.subtractionSetP1;
-    let newS2 = draft.subtractionSetP2;
+    const s1Mask = this.setToMask(draft.subtractionSetP1);
+    const s2Mask = this.setToMask(draft.subtractionSetP2);
+    const valueBit = 1 << (value - 1);
+
+    let newS1Mask = s1Mask;
+    let newS2Mask = s2Mask;
     if (currentDrafter === 1) {
-      newS1 = this.insertSorted(draft.subtractionSetP1, value);
+      newS1Mask = s1Mask | valueBit;
     } else {
-      newS2 = this.insertSorted(draft.subtractionSetP2, value);
+      newS2Mask = s2Mask | valueBit;
     }
     const nextTurn: 1 | 2 = currentDrafter === 1 ? 2 : 1;
-    // evaluatePartisanState returns "P1 wins from here"
-    const p1Wins = this.evaluatePartisanState(newS1, newS2, nextTurn);
+    // evaluatePartisanStateMask returns "P1 wins from here"
+    const p1Wins = this.evaluatePartisanStateMask(newS1Mask, newS2Mask, nextTurn);
     // Pick is winning for current drafter iff:
     //   - P1 drafted and resulting state has p1Wins === true
     //   - P2 drafted and resulting state has p1Wins === false
@@ -337,60 +359,181 @@ export class DraftSubtractionAi {
   }
 
   /**
-   * Partisan draft minimax with α-β pruning and transposition table.
-   * Returns TRUE iff P1 wins from the state (S1, S2, turn) under perfect play.
+   * Partisan draft minimax with α-β pruning and transposition table - BITMASK version.
    *
-   * Normalized to P1's perspective:
-   *  - At P1's turn (MAX): return TRUE if ANY child returns TRUE (early exit).
-   *  - At P2's turn (MIN): return TRUE only if ALL children return TRUE (early exit on first FALSE).
+   * Optimizations vs array version:
+   *  - State (S1, S2) encoded as bitmasks (32-bit ints). Cache key is just
+   *    `s1Mask.toString(36) + '|' + s2Mask.toString(36) + '|' + turn` - much shorter
+   *    and faster to hash than comma-separated number lists.
+   *  - getAvailableNumbers replaced with bitmask AND/NOT ops.
+   *  - insertSorted replaced with a single OR.
+   *  - Killer-move heuristic: tries the move that previously caused a cutoff
+   *    at this depth first, dramatically increasing pruning rate.
    *
-   * For boolean values, α-β collapses to "early exit on found winning/losing child".
+   * Returns TRUE iff P1 wins from the state (s1Mask, s2Mask, turn) under perfect play.
    */
-  private evaluatePartisanState(s1: number[], s2: number[], turn: 1 | 2): boolean {
+  private evaluatePartisanStateMask(s1Mask: number, s2Mask: number, turn: 1 | 2): boolean {
     const k = this.config.k;
-    const cacheKey = `${s1.join(',')}|${s2.join(',')}|${turn}`;
+    const cacheKey = s1Mask.toString(36) + '|' + s2Mask.toString(36) + '|' + turn;
     const cached = this.partisanDraftCache.get(cacheKey);
     if (cached !== undefined) return cached;
 
+    const s1Count = this.popCount(s1Mask);
+    const s2Count = this.popCount(s2Mask);
+
     // Terminal: draft complete (both sets at size k). Evaluate subtraction phase.
-    if (s1.length === k && s2.length === k) {
-      // Per partisan rules: draft always ends with Player 2 (2k picks total, P1 starts),
-      // so Player 1 makes the first subtraction move.
-      const pattern = this.getPartisanSubtractionPattern(s1, s2);
+    if (s1Count === k && s2Count === k) {
+      const s1Arr = this.maskToSortedArray(s1Mask);
+      const s2Arr = this.maskToSortedArray(s2Mask);
+      const pattern = this.getPartisanSubtractionPattern(s1Arr, s2Arr);
+      // Per partisan rules: draft ends with P2's pick → P1 starts subtraction
       const result = this.lookupPartisan(pattern, this.config.n, 1);
       this.partisanDraftCache.set(cacheKey, result);
       return result;
     }
 
-    // Recursive case: enumerate pool moves
-    const available = this.getPartisanAvailableNumbers(s1, s2);
-    const ordered = this.orderMovesForSearch(available);
+    // Available moves = pool bits NOT in s1 or s2
+    const usedMask = s1Mask | s2Mask;
+    const poolMask = (1 << this.config.poolSize) - 1;
+    const availableMask = poolMask & ~usedMask;
+
+    if (availableMask === 0) {
+      // Defensive: nothing to pick. Shouldn't happen for valid inputs.
+      this.partisanDraftCache.set(cacheKey, false);
+      return false;
+    }
+
+    const depth = s1Count + s2Count;
+    const killerValue = this.killerMoves.get(depth) ?? 0;
+    const killerBit = (killerValue > 0) ? (1 << (killerValue - 1)) : 0;
+
+    // Get a depth-specific buffer (avoids reentrancy bug - each depth has its own)
+    const orderedBits = this.orderBitsForSearch(availableMask, killerBit, depth);
+    const count = orderedBits.length;
 
     if (turn === 1) {
-      // MAX: looking for any TRUE
-      for (const value of ordered) {
-        if (s1.length >= k) break;  // shouldn't happen but safety
-        const newS1 = this.insertSorted(s1, value);
-        if (this.evaluatePartisanState(newS1, s2, 2)) {
+      // MAX: looking for any TRUE → return on first hit (α-cutoff)
+      for (let i = 0; i < count; i++) {
+        const valueBit = orderedBits[i];
+        const newS1Mask = s1Mask | valueBit;
+        if (this.evaluatePartisanStateMask(newS1Mask, s2Mask, 2)) {
+          // α-cutoff! Promote this move to killer for this depth.
+          this.killerMoves.set(depth, this.bitToValue(valueBit));
           this.partisanDraftCache.set(cacheKey, true);
-          return true;  // α-cutoff: found winning move for P1
+          return true;
         }
       }
       this.partisanDraftCache.set(cacheKey, false);
       return false;
     } else {
-      // MIN: looking for any FALSE
-      for (const value of ordered) {
-        if (s2.length >= k) break;
-        const newS2 = this.insertSorted(s2, value);
-        if (!this.evaluatePartisanState(s1, newS2, 1)) {
+      // MIN: looking for any FALSE → return on first FALSE (β-cutoff)
+      for (let i = 0; i < count; i++) {
+        const valueBit = orderedBits[i];
+        const newS2Mask = s2Mask | valueBit;
+        if (!this.evaluatePartisanStateMask(s1Mask, newS2Mask, 1)) {
+          // β-cutoff! Promote killer.
+          this.killerMoves.set(depth, this.bitToValue(valueBit));
           this.partisanDraftCache.set(cacheKey, false);
-          return false;  // β-cutoff: P2 found a move making P1 lose
+          return false;
         }
       }
       this.partisanDraftCache.set(cacheKey, true);
       return true;
     }
+  }
+
+  // ---- Bitmask helpers ----
+
+  /** Convert a sorted array of values [1..poolSize] to a bitmask. */
+  private setToMask(set: readonly number[]): number {
+    let mask = 0;
+    for (let i = 0; i < set.length; i++) {
+      mask |= 1 << (set[i] - 1);
+    }
+    return mask;
+  }
+
+  /** Convert a bitmask back to a sorted array of values. */
+  private maskToSortedArray(mask: number): number[] {
+    const result: number[] = [];
+    let m = mask;
+    let v = 1;
+    while (m !== 0) {
+      if (m & 1) result.push(v);
+      m >>>= 1;
+      v++;
+    }
+    return result;
+  }
+
+  /** Population count (number of set bits). Hacker's Delight algorithm. */
+  private popCount(mask: number): number {
+    let m = mask;
+    m = m - ((m >>> 1) & 0x55555555);
+    m = (m & 0x33333333) + ((m >>> 2) & 0x33333333);
+    m = (m + (m >>> 4)) & 0x0f0f0f0f;
+    return (m * 0x01010101) >>> 24;
+  }
+
+  /** Convert a single-bit mask (power of 2) to its value (bit position + 1). */
+  private bitToValue(bit: number): number {
+    // log2 of a power-of-2 number via bit trick. For our small poolSize this is fine.
+    let n = bit, log = 0;
+    while (n > 1) {
+      n >>>= 1;
+      log++;
+    }
+    return log + 1;
+  }
+
+  /**
+   * Order available bits for α-β search. Killer move goes first (if available),
+   * then remaining values are sorted by distance from pool midpoint (median-first
+   * heuristic - pivotal picks usually produce earlier cutoffs).
+   *
+   * Uses per-depth buffer. Each recursive call increments depth by 1, so buffers
+   * for different depths never conflict.
+   */
+  private orderBitsForSearch(availableMask: number, killerBit: number, depth: number): number[] {
+    // Lazy-grow the per-depth buffer array
+    while (this.orderingBuffers.length <= depth) {
+      this.orderingBuffers.push([]);
+    }
+    const buf = this.orderingBuffers[depth];
+    buf.length = 0;
+    const mid = (this.config.poolSize + 1) / 2;
+
+    // Killer first (if it's actually available)
+    if (killerBit !== 0 && (availableMask & killerBit) !== 0) {
+      buf.push(killerBit);
+    }
+
+    // Collect non-killer bits, then sort in place by distance from midpoint.
+    // To avoid object allocation, encode (score, bit) into a single int:
+    //   score * 100 + value_index. Score 0..poolSize, value_index 1..poolSize.
+    // This works because poolSize ≤ 50, so score < 50 and value_index < 100.
+    const sortBuf: number[] = [];
+    let m = availableMask;
+    let v = 1;
+    while (m !== 0) {
+      if (m & 1) {
+        const bit = 1 << (v - 1);
+        if (bit !== killerBit) {
+          const score = Math.abs(v - mid) * 2 | 0;  // *2 then floor → score in 0..2*poolSize
+          // Pack: high 16 bits = score, low 16 bits = v (we recover bit from v later)
+          sortBuf.push((score << 16) | v);
+        }
+      }
+      m >>>= 1;
+      v++;
+    }
+    sortBuf.sort((a, b) => a - b);
+    for (let i = 0; i < sortBuf.length; i++) {
+      const v2 = sortBuf[i] & 0xffff;
+      buf.push(1 << (v2 - 1));
+    }
+
+    return buf;
   }
 
   /**
@@ -418,7 +561,7 @@ export class DraftSubtractionAi {
     const p2Win: boolean[] = [];
     const windows = new Map<string, number>();
 
-    // Safety cap on iterations — period MUST be found within 4^maxMove + maxMove
+    // Safety cap on iterations - period MUST be found within 4^maxMove + maxMove
     // (number of distinct boolean tuples of length maxMove).
     const safetyCap = Math.max(10_000, Math.min(100_000, Math.pow(4, maxMove) + maxMove));
 
@@ -511,7 +654,7 @@ export class DraftSubtractionAi {
   }
 
   /**
-   * Move ordering heuristic for α-β. Try middle-valued picks first — they're
+   * Move ordering heuristic for α-β. Try middle-valued picks first - they're
    * often most "pivotal" (split the pool roughly in half, create interesting
    * subgames). This dramatically improves pruning in practice.
    *

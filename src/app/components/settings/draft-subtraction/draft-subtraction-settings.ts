@@ -23,24 +23,37 @@ export class DraftSubtractionSettings {
 
   constructor(private router: Router) {}
 
-  readonly ABSOLUTE_MAX_POOL_SIZE = 30;
-  readonly ABSOLUTE_MAX_K = 8;
+  readonly ABSOLUTE_IMPARTIAL_MAX_POOL_SIZE = 30;
+  readonly ABSOLUTE_IMPARTIAL_MAX_K = 8;
+  readonly ABSOLUTE_PARTISAN_MAX_POOL_SIZE = 20;
+  readonly ABSOLUTE_PARTISAN_MAX_K = 4;
+  CURRENT_MAX_POOL_SIZE = this.ABSOLUTE_IMPARTIAL_MAX_POOL_SIZE;
+  CURRENT_MAX_K = this.ABSOLUTE_IMPARTIAL_MAX_K;
 
   get isPartisan(): boolean {
     return this.draftType === 'partisan';
   }
 
   get maxPoolSize(): number {
-    return Math.min(this.ABSOLUTE_MAX_POOL_SIZE, Math.floor(0.4 * this.n));
+    return Math.min(this.CURRENT_MAX_POOL_SIZE, Math.floor(0.4 * this.n));
   }
 
   get maxK(): number {
-    return Math.min(this.ABSOLUTE_MAX_K, this.poolSize);
+    return Math.min(this.CURRENT_MAX_K, this.poolSize);
   }
 
   setDraftType(type: DraftVariantType): void {
     if (this.draftType === type) return;
     this.draftType = type;
+    if (this.isPartisan) {
+      this.CURRENT_MAX_K = this.ABSOLUTE_PARTISAN_MAX_K;
+      this.CURRENT_MAX_POOL_SIZE = this.ABSOLUTE_PARTISAN_MAX_POOL_SIZE;
+      this.k = Math.min(this.CURRENT_MAX_K, this.k);
+      this.poolSize = Math.min(this.CURRENT_MAX_POOL_SIZE, this.poolSize);
+    } else {
+      this.CURRENT_MAX_K = this.ABSOLUTE_IMPARTIAL_MAX_K;
+      this.CURRENT_MAX_POOL_SIZE = this.ABSOLUTE_IMPARTIAL_MAX_POOL_SIZE;
+    }
   }
 
   get isValid(): boolean {
@@ -56,9 +69,9 @@ export class DraftSubtractionSettings {
     if (this.n < 2) errors.push('N must be at least 2');
     if (this.poolSize <= 0) errors.push('p must be greater than 0');
     if (this.k <= 0) errors.push('k must be greater than 0');
-    if (this.poolSize > this.ABSOLUTE_MAX_POOL_SIZE) errors.push('p must be less than or equal ' + this.ABSOLUTE_MAX_POOL_SIZE);
+    if (this.poolSize > this.CURRENT_MAX_POOL_SIZE) errors.push('p must be less than or equal ' + this.CURRENT_MAX_POOL_SIZE);
     if (this.poolSize >= 0.4 * this.n) errors.push('p must be less than 0.4 × N (' + (0.4 * this.n) + ')');
-    if (this.k > this.ABSOLUTE_MAX_K) errors.push('k must be less than or equal ' + this.ABSOLUTE_MAX_K);
+    if (this.k > this.CURRENT_MAX_K) errors.push('k must be less than or equal ' + this.CURRENT_MAX_K);
     if (this.k > this.poolSize) errors.push('k must be less than or equal p (' + this.poolSize + ')');
     return errors;
   }

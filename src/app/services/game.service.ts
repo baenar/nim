@@ -25,6 +25,10 @@ export class GameService {
   private _draftCheatTaskId = 0;
   private draftCompleteTimer: number | null = null;
 
+  /** Web Worker for partisan cheat analysis. Lazily spawned per game session. */
+  private partisanCheatWorker: Worker | null = null;
+  private partisanCheatWorkerReady = false;
+
   readonly config = this._config.asReadonly();
   readonly state = this._state.asReadonly();
   readonly selectedStack = this._selectedStack.asReadonly();
@@ -80,6 +84,8 @@ export class GameService {
 
   startGame(config: GameConfig): void {
     this.clearDraftCompleteTimer();
+    // Fresh game → fresh worker (config / parameters may have changed)
+    this.terminatePartisanCheatWorker();
     this._config.set(config);
     this._state.set(this.createInitialState(config));
     this._selectedStack.set(null);
@@ -151,13 +157,21 @@ export class GameService {
       isLocked: draft.isLocked,
     };
 
-    // Initial state — everything pending
+    // Initial state - everything pending
     this._draftCheatProgress.set({
       winning: [],
       losing: [],
       pending: [...pool],
     });
 
+    // For partisan: dispatch to Web Worker so the UI thread stays responsive
+    // even for very expensive minimax evaluations.
+    if ((config as DraftSubtractionConfig).draftType === 'partisan') {
+      this.dispatchPartisanCheatToWorker(config as DraftSubtractionConfig, draftSnapshot, pool, taskId);
+      return;
+    }
+
+    // Impartial: chunk on main thread (each pick is fast)
     const evaluateNext = (index: number): void => {
       // Cancelled or superseded
       if (taskId !== this._draftCheatTaskId) return;
@@ -165,24 +179,88 @@ export class GameService {
 
       const value = pool[index];
       const isWinning = ai.isDraftPickWinningForCurrent(draftSnapshot, value);
-
-      const progress = this._draftCheatProgress();
-      if (!progress) return;
-
-      const winning = isWinning
-        ? [...progress.winning, value].sort((a, b) => a - b)
-        : progress.winning;
-      const losing = !isWinning
-        ? [...progress.losing, value].sort((a, b) => a - b)
-        : progress.losing;
-      const pending = progress.pending.filter(v => v !== value);
-
-      this._draftCheatProgress.set({ winning, losing, pending });
+      this.recordCheatResult(taskId, value, isWinning);
 
       setTimeout(() => evaluateNext(index + 1), 0);
     };
 
     setTimeout(() => evaluateNext(0), 0);
+  }
+
+  /** Apply one cheat-evaluation result to the progress signal (no-op if stale). */
+  private recordCheatResult(taskId: number, value: number, isWinning: boolean): void {
+    if (taskId !== this._draftCheatTaskId) return;
+    const progress = this._draftCheatProgress();
+    if (!progress) return;
+    const winning = isWinning
+      ? [...progress.winning, value].sort((a, b) => a - b)
+      : progress.winning;
+    const losing = !isWinning
+      ? [...progress.losing, value].sort((a, b) => a - b)
+      : progress.losing;
+    const pending = progress.pending.filter(v => v !== value);
+    this._draftCheatProgress.set({ winning, losing, pending });
+  }
+
+  /**
+   * Spawn (or reuse) the partisan worker and queue evaluation requests for
+   * every pool value. Results stream back into the cheat progress signal.
+   * Stale results (taskId mismatch) are silently dropped.
+   */
+  private dispatchPartisanCheatToWorker(
+    config: DraftSubtractionConfig,
+    draftSnapshot: DraftState,
+    pool: number[],
+    taskId: number,
+  ): void {
+    const worker = this.ensurePartisanCheatWorker(config);
+    for (const value of pool) {
+      worker.postMessage({
+        type: 'evaluate',
+        draft: draftSnapshot,
+        value,
+        batchId: taskId,
+      });
+    }
+  }
+
+  /**
+   * Lazily create and reuse one worker per game session. The worker's internal
+   * AI instance retains its transposition table and killer-move heuristic
+   * across all evaluations, so consecutive draft picks within the same game
+   * benefit from accumulated cache.
+   */
+  private ensurePartisanCheatWorker(config: DraftSubtractionConfig): Worker {
+    if (this.partisanCheatWorker) return this.partisanCheatWorker;
+
+    const worker = new Worker(
+      new URL('./draft-subtraction/partisan-cheat.worker', import.meta.url),
+      { type: 'module' },
+    );
+
+    worker.addEventListener('message', (event: MessageEvent) => {
+      const msg = event.data;
+      if (msg?.type === 'ready') {
+        this.partisanCheatWorkerReady = true;
+        return;
+      }
+      if (msg?.type === 'result') {
+        this.recordCheatResult(msg.batchId, msg.value, msg.isWinning);
+      }
+    });
+
+    worker.postMessage({ type: 'init', config });
+    this.partisanCheatWorker = worker;
+    return worker;
+  }
+
+  /** Terminate the worker when starting a new game (different config). */
+  private terminatePartisanCheatWorker(): void {
+    if (this.partisanCheatWorker) {
+      this.partisanCheatWorker.terminate();
+      this.partisanCheatWorker = null;
+      this.partisanCheatWorkerReady = false;
+    }
   }
 
   private cancelDraftCheatComputation(): void {
