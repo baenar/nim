@@ -74,7 +74,11 @@ export class DraftSubtractionSettings {
     if (this.poolSize > this.CURRENT_MAX_POOL_SIZE) errors.push('p must be less than or equal ' + this.CURRENT_MAX_POOL_SIZE);
     if (this.poolSize >= 0.4 * this.n) errors.push('p must be less than 0.4 × N (' + (0.4 * this.n) + ')');
     if (this.k > this.CURRENT_MAX_K) errors.push('k must be less than or equal ' + this.CURRENT_MAX_K);
-    if (this.k > this.poolSize) errors.push('k must be less than or equal p (' + this.poolSize + ')');
+    if (this.isPartisan) {
+      if (this.k * 2 > this.poolSize) errors.push('2k needs to be less than or equal p (' + this.poolSize + ')');
+    } else {
+      if (this.k > this.poolSize) errors.push('k must be less than or equal p (' + this.poolSize + ')');
+    }
     return errors;
   }
 
