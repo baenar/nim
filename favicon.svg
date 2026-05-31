@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%">
+  <defs>
+    <linearGradient id="diskGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#3BB0F2" />
+      <stop offset="20%" stop-color="#1C95E0" />
+      <stop offset="80%" stop-color="#0B7ECA" />
+      <stop offset="100%" stop-color="#0266AD" />
+    </linearGradient>
+
+    <g id="disk">
+      <rect x="18" y="2" width="64" height="18" rx="8" fill="#0b0f17" opacity="0.4"/>
+      <rect x="18" y="0" width="64" height="18" rx="8" fill="url(#diskGrad)"/>
+      <rect x="19" y="1" width="62" height="16" rx="7" fill="none" stroke="#87d4ff" stroke-width="1" opacity="0.5"/>
+      <path d="M 18 8 L 22 8" stroke="#00447a" stroke-width="2" stroke-linecap="round"/>
+      <path d="M 82 8 L 78 8" stroke="#00447a" stroke-width="2" stroke-linecap="round"/>
+    </g>
+  </defs>
+
+  <rect x="44" y="20" width="12" height="60" fill="#2a3546" />
+
+  <rect x="15" y="80" width="70" height="10" rx="5" fill="#2a3546" />
+
+  <use href="#disk" x="0" y="24" />
+  <use href="#disk" x="0" y="50" />
+</svg>
