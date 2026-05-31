@@ -65,6 +65,16 @@
 .toggle-group {
   display: flex;
   gap: 8px;
+
+  &--sm {
+    margin-top: 12px;
+  }
+}
+
+.sub-option {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-color);
 }
 
 .toggle-btn {

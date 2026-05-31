@@ -53,6 +53,28 @@
           vs Player
         </button>
       </div>
+
+      @if (opponent === 'computer') {
+        <div class="sub-option">
+          <label class="form-label">Difficulty</label>
+          <div class="toggle-group toggle-group--sm">
+            <button
+              class="toggle-btn"
+              [class.active]="difficulty === 'random'"
+              (click)="difficulty = 'random'"
+            >
+              Random
+            </button>
+            <button
+              class="toggle-btn"
+              [class.active]="difficulty === 'expert'"
+              (click)="difficulty = 'expert'"
+            >
+              Expert
+            </button>
+          </div>
+        </div>
+      }
     </div>
 
     <div class="form-section">

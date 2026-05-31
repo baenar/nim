@@ -6,6 +6,7 @@ import {
   DraftVariantType,
   DRAFT_SUBTRACTION_DEFAULTS,
 } from '../../../models/draft-subtraction/draft-subtraction.models';
+import { ComputerDifficulty } from '../../../models/shared/game-state.models';
 
 @Component({
   selector: 'app-draft-subtraction-settings',
@@ -19,6 +20,7 @@ export class DraftSubtractionSettings {
   poolSize = DRAFT_SUBTRACTION_DEFAULTS.poolSize;
   draftType: DraftVariantType = DRAFT_SUBTRACTION_DEFAULTS.draftType;
   opponent = DRAFT_SUBTRACTION_DEFAULTS.opponent;
+  difficulty: ComputerDifficulty = DRAFT_SUBTRACTION_DEFAULTS.difficulty;
   cheatMode = DRAFT_SUBTRACTION_DEFAULTS.cheatMode;
 
   constructor(private router: Router) {}
@@ -83,7 +85,7 @@ export class DraftSubtractionSettings {
       stackCount: 1,
       stackSizes: [this.n],
       opponent: this.opponent,
-      difficulty: 'expert',
+      difficulty: this.difficulty,
       endCondition: 'last-wins',
       n: this.n,
       k: this.k,
